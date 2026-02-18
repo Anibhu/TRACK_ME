@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Path Viewer</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { 
+            height: 500px; 
+            width: 100%;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ User Path Viewer</h1>
+        
+        <div class="user-selection">
+            <label for="userSelect">Select User:</label>
+            <select id="userSelect">
+                <option value="">-- Select User --</option>
+            </select>
+            <button onclick="loadPath()" id="loadBtn">Load Path</button>
+        </div>
+
+        <div class="path-info">
+            <p id="pathStats">Select a user to view their path</p>
+        </div>
+
+        <div class="map-container">
+            <div id="map">Loading map...</div>
+        </div>
+
+        <div class="navigation">
+            <a href="index.html" class="nav-link">← Back to Tracking</a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Backend URL
+        const BACKEND_URL = 'http://localhost:8000/api/v1';
+        
+        let map = null;
+        let polylineLayer = null;
+        let startMarker = null, endMarker = null;
+
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initializing application...');
+            initMap();
+            loadUsers();
+        });
+
+        function initMap() {
+            try {
+                if (map) {
+                    console.log('Map already initialized');
+                    return;
+                }
+                
+                const mapElement = document.getElementById('map');
+                if (!mapElement) {
+                    console.error('Map container not found!');
+                    return;
+                }
+
+                console.log('🗺️ Initializing map...');
+                map = L.map('map').setView([22.58, 88.44], 13);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
+                }).addTo(map);
+                
+                console.log('✅ Map initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Map initialization failed:', error);
+                document.getElementById('map').innerHTML = 'Map failed to load: ' + error.message;
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                console.log('👥 Loading users...');
+                const response = await fetch(`${BACKEND_URL}/users/`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const users = await response.json();
+                console.log('✅ Users loaded:', users);
+                
+                const userSelect = document.getElementById('userSelect');
+                userSelect.innerHTML = '<option value="">-- Select User --</option>';
+                
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    userSelect.appendChild(option);
+                });
+                
+                if (users.length > 0) {
+                    document.getElementById('pathStats').textContent = `Found ${users.length} user(s). Select one to view their path.`;
+                } else {
+                    document.getElementById('pathStats').textContent = 'No users found. Track some locations first.';
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading users:', error);
+                document.getElementById('pathStats').textContent = 'Error loading users: ' + error.message;
+            }
+        }
+
+        async function loadPath() {
+            const user = document.getElementById('userSelect').value;
+            const loadBtn = document.getElementById('loadBtn');
+            
+            if (!user) {
+                alert('Please select a user first');
+                return;
+            }
+            
+            try {
+                loadBtn.disabled = true;
+                loadBtn.textContent = 'Loading...';
+                document.getElementById('pathStats').textContent = `Loading path for ${user}...`;
+                
+                console.log(`🛣️ Loading path for ${user}...`);
+                const response = await fetch(`${BACKEND_URL}/locations/path/${user}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ Path data received:', data);
+                
+                if (!data || data.length === 0) {
+                    document.getElementById('pathStats').textContent = `No location data found for ${user}.`;
+                    alert(`No location data found for ${user}.`);
+                    return;
+                }
+                
+                // Clear previous layers
+                clearMap();
+                
+                // Create path
+                const latlngs = data.map(point => [point.lat, point.lng]);
+                displayPathOnMap(latlngs);
+                displayPathStats(data, latlngs);
+                
+                console.log('✅ Path displayed successfully');
+                
+            } catch (error) {
+                console.error('❌ Error loading path:', error);
+                document.getElementById('pathStats').textContent = `Error: ${error.message}`;
+                alert('Failed to load path: ' + error.message);
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.textContent = 'Load Path';
+            }
+        }
+
+        function displayPathOnMap(latlngs) {
+            if (!map) {
+                console.error('Map not available for displaying path');
+                return;
+            }
+            
+            // Create polyline
+            polylineLayer = L.polyline(latlngs, {
+                color: 'blue',
+                weight: 6,
+                opacity: 0.7
+            }).addTo(map);
+            
+            // Add markers
+            startMarker = L.marker(latlngs[0])
+                .addTo(map)
+                .bindPopup('📍 Start Point')
+                .openPopup();
+                
+            endMarker = L.marker(latlngs[latlngs.length - 1])
+                .addTo(map)
+                .bindPopup('🎯 End Point');
+                
+            // Fit bounds to show entire path
+            map.fitBounds(polylineLayer.getBounds());
+        }
+
+        function displayPathStats(data, latlngs) {
+            const startTime = data[0].timestamp ? new Date(data[0].timestamp) : new Date();
+            const endTime = data[data.length - 1].timestamp ? new Date(data[data.length - 1].timestamp) : new Date();
+            
+            let totalDistance = 0;
+            for (let i = 1; i < latlngs.length; i++) {
+                totalDistance += calculateDistance(latlngs[i-1][0], latlngs[i-1][1], latlngs[i][0], latlngs[i][1]);
+            }
+            
+            const duration = Math.round((endTime - startTime) / 1000 / 60);
+            
+            document.getElementById('pathStats').innerHTML = `
+                <strong>📊 ${document.getElementById('userSelect').value}'s Path</strong><br>
+                • Points: ${data.length}<br>
+                • Distance: ${totalDistance.toFixed(2)} km<br>
+                • Duration: ${duration} min<br>
+                • Start: ${startTime.toLocaleTimeString()}<br>
+                • End: ${endTime.toLocaleTimeString()}
+            `;
+        }
+
+        function clearMap() {
+            if (polylineLayer && map) map.removeLayer(polylineLayer);
+            if (startMarker && map) map.removeLayer(startMarker);
+            if (endMarker && map) map.removeLayer(endMarker);
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2)**2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+    </script>
+</body>
+</html>

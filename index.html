@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📍Location Tracker📍</h1>
+        
+        <div class="user-section">
+            <label for="userId">User ID:</label>
+            <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
+            <button onclick="updateUserId()">Update User</button>
+        </div>
+
+        <div class="status">
+            <p id="status">Ready to track location...</p>
+            <p id="currentLocation">No location data yet</p>
+        </div>
+
+        <div class="controls">
+            <button onclick="startTracking()" id="startBtn">Start Tracking</button>
+            <button onclick="stopTracking()" id="stopBtn" disabled>Stop Tracking</button>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div class="navigation">
+            <a href="view_path.html" class="nav-link">View User Paths →</a>
+        </div>
+    </div>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <!-- App JS -->
+    <script src="js/map.js"></script>
+    <script src="js/tracking.js"></script>
+</body>
+</html>
