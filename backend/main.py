@@ -117,11 +117,4 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
 
 
-
-#   how to run backend serv
-
-#     ANISH BHUIN@LAPTOP-ROGJGU63 MINGW64 ~
-# $ cd "C:\Users\ANISH BHUIN\OneDrive\Desktop\tracking\backend"
-#   and then uvicorn main:app --reload
-
-#  and http://localhost:8000/docs#/  run on browser and web page 
+# ***
