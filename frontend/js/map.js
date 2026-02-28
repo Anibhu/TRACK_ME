@@ -69,3 +69,21 @@ document.addEventListener('DOMContentLoaded', function() {
         initTrackingMap();
     }
 });
+
+function toggleFullscreenMap() {
+    const mapContainer = document.querySelector('.map-container');
+
+    if (!document.fullscreenElement) {
+        mapContainer.requestFullscreen().then(() => {
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
+        });
+    } else {
+        document.exitFullscreen().then(() => {
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
+        });
+    }
+}

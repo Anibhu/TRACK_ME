@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Location Tracker</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- Add this in the head section -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
@@ -25,14 +27,16 @@
             <button onclick="startTracking()" id="startBtn">Start Tracking</button>
             <button onclick="stopTracking()" id="stopBtn" disabled>Stop Tracking</button>
         </div>
-
-        <div class="map-container">
-            <div id="map"></div>
-        </div>
-
+        
         <div class="navigation">
             <a href="view_path.html" class="nav-link">View User Paths →</a>
         </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <button class="fullscreen-btn" onclick="toggleFullscreenMap()">⛶</button>
+        </div>
+
     </div>
 
     <!-- Leaflet CSS & JS -->

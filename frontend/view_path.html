@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Path Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/view_path.css">
+</head>
+<body>
+
+<div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-route"></i>
+                Path Explorer
+            </h1>
+            <p>Visualize and analyze user movement paths with interactive maps and detailed statistics</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- User Selection Card -->
+            <div class="selection-card">
+                <div class="input-group">
+                    <label for="userSelect">
+                        <i class="fas fa-user"></i>
+                        Select User
+                    </label>
+                    <div class="custom-select">
+                        <select id="userSelect" title="Select User" aria-label="Select User">
+                            <option value="">-- Choose a user --</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="loadPath()" id="loadBtn" class="load-btn">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span>Load Journey</span>
+                </button>
+            </div>
+            
+            <!-- Navigation -->
+            <div class="navigation">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Live Tracking
+                </a>
+            </div>
+            <!-- Stats Grid (initially hidden) -->
+            <div class="stats-grid" id="statsGrid" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-map-pin"></i>
+                    </div>
+                    <div class="stat-label">Total Points</div>
+                    <div class="stat-value" id="totalPoints">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <div class="stat-label">Distance</div>
+                    <div class="stat-value">
+                        <span id="totalDistance">0</span>
+                        <span class="stat-unit">km</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-label">Duration</div>
+                    <div class="stat-value">
+                        <span id="totalDuration">0</span>
+                        <span class="stat-unit">min</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
+                    <div class="stat-label">Avg. Speed</div>
+                    <div class="stat-value">
+                        <span id="avgSpeed">0</span>
+                        <span class="stat-unit">km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="map-wrapper">
+                <div id="map">
+                    <button class="fullscreen-btn" onclick="toggleFullscreenMap()">⛶</button>
+                    <div style="text-align: center; padding: 200px 20px; color: var(--gray);">
+                        <i class="fas fa-map" style="font-size: 48px; margin-bottom: 20px;"></i>
+                        <p>Loading map...</p>
+                    </div>
+                </div>
+                <div class="map-overlay" id="mapOverlay" style="display: none;">
+                    <i class="fas fa-circle" style="color: var(--primary);"></i>
+                    <span id="routeInfo"></span>
+                </div>
+            </div>
+
+            <!-- Timeline Section (initially hidden) -->
+            <div class="timeline-section" id="timelineSection" style="display: none;">
+                <div class="timeline-title">
+                    <i class="fas fa-history"></i>
+                    <h3>Journey Timeline</h3>
+                </div>
+                <div class="timeline" id="timeline">
+                    <!-- Timeline items will be added here -->
+                </div>
+            </div>
+
+            <!-- Empty State (shown when no data) -->
+            <div class="empty-state" id="emptyState">
+                <i class="fas fa-map-marked-alt"></i>
+                <h3>No Path Selected</h3>
+                <p>Select a user and click "Load Journey" to visualize their path</p>
+            </div>
+        </div>
+    </div>
+
+    
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+const BACKEND_URL = 'http://localhost:8000/api/v1';
+
+let map = null;
+let polylineLayer = null;
+let startMarker = null;
+let endMarker = null;
+let waypointMarkers = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    initMap();
+    loadUsers();
+});
+
+function initMap() {
+    map = L.map('map').setView([22.58, 88.44], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+}
+
+async function loadUsers() {
+    try {
+        const response = await fetch(`${BACKEND_URL}/users/`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const users = await response.json();
+        const select = document.getElementById('userSelect');
+
+        select.innerHTML = '<option value="">-- Choose User --</option>';
+
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user;
+            option.textContent = user;
+            select.appendChild(option);
+        });
+
+        // Show empty state with user count
+        if (users.length > 0) {
+            showEmptyState(`Found ${users.length} users. Select one to view their path.`, 'info');
+        } else {
+            showEmptyState('No users found. Track some locations first.', 'warning');
+        }
+
+    } catch (error) {
+        console.error('Error loading users:', error);
+        showEmptyState('Error loading users: ' + error.message, 'error');
+    }
+}
+
+async function loadPath() {
+    const user = document.getElementById('userSelect').value;
+    const loadBtn = document.getElementById('loadBtn');
+
+    if (!user) {
+        showNotification('Please select a user first', 'warning');
+        return;
+    }
+
+    try {
+        // Show loading state
+        loadBtn.disabled = true;
+        loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        
+        // Hide all sections while loading
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('statsGrid').style.display = 'none';
+        document.getElementById('timelineSection').style.display = 'none';
+        document.getElementById('mapOverlay').style.display = 'none';
+
+        const response = await fetch(`${BACKEND_URL}/locations/path/${user}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+
+        if (!data || data.length === 0) {
+            showEmptyState(`No location data found for ${user}. Start tracking first!`, 'info');
+            return;
+        }
+
+        // Clear previous map layers
+        clearMap();
+
+        // Process and display the path
+        displayPath(data);
+
+    } catch (error) {
+        console.error('Error loading path:', error);
+        showEmptyState('Error loading path: ' + error.message, 'error');
+        showNotification('Failed to load path: ' + error.message, 'error');
+    } finally {
+        // Reset button
+        loadBtn.disabled = false;
+        loadBtn.innerHTML = '<i class="fas fa-map-marked-alt"></i> Load Journey';
+    }
+}
+
+function displayPath(data) {
+    // Create path points
+    const latlngs = data.map(p => [p.lat, p.lng]);
+
+    // Draw the path
+    polylineLayer = L.polyline(latlngs, {
+        color: '#4361ee',
+        weight: 6,
+        opacity: 0.8,
+        lineCap: 'round',
+        lineJoin: 'round'
+    }).addTo(map);
+
+    // Add start marker
+    startMarker = L.marker(latlngs[0], {
+        icon: L.divIcon({
+            className: 'custom-marker-start',
+            html: '<div style="background: #06d6a0; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>',
+            iconSize: [20, 20],
+            popupAnchor: [0, -10]
+        })
+    }).addTo(map)
+      .bindPopup(`
+        <b>🏁 Start Point</b><br>
+        ${data[0].timestamp ? new Date(data[0].timestamp).toLocaleString() : 'No timestamp'}<br>
+        Lat: ${data[0].lat.toFixed(6)}<br>
+        Lng: ${data[0].lng.toFixed(6)}
+      `);
+
+    // Add end marker
+    endMarker = L.marker(latlngs[latlngs.length - 1], {
+        icon: L.divIcon({
+            className: 'custom-marker-end',
+            html: '<div style="background: #ef476f; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>',
+            iconSize: [20, 20],
+            popupAnchor: [0, -10]
+        })
+    }).addTo(map)
+      .bindPopup(`
+        <b>🏁 End Point</b><br>
+        ${data[data.length - 1].timestamp ? new Date(data[data.length - 1].timestamp).toLocaleString() : 'No timestamp'}<br>
+        Lat: ${data[data.length - 1].lat.toFixed(6)}<br>
+        Lng: ${data[data.length - 1].lng.toFixed(6)}
+      `);
+
+    // Fit map to show entire path
+    map.fitBounds(polylineLayer.getBounds(), { padding: [50, 50] });
+
+    // Calculate and display statistics
+    calculateAndDisplayStats(data, latlngs);
+
+    // Display timeline
+    displayTimeline(data);
+
+    // Show UI elements
+    document.getElementById('statsGrid').style.display = 'grid';
+    document.getElementById('timelineSection').style.display = 'block';
+    document.getElementById('mapOverlay').style.display = 'flex';
+    document.getElementById('emptyState').style.display = 'none';
+
+    // Update overlay info
+    document.getElementById('routeInfo').innerHTML = `
+        <strong>${document.getElementById('userSelect').value}</strong> • 
+        ${data.length} points
+    `;
+
+    // Show success notification
+    showNotification(`Path loaded for ${document.getElementById('userSelect').value}`, 'success');
+}
+
+function calculateAndDisplayStats(data, latlngs) {
+    // Calculate total distance
+    let totalDistance = 0;
+    for (let i = 1; i < latlngs.length; i++) {
+        totalDistance += calculateDistance(
+            latlngs[i - 1][0], latlngs[i - 1][1],
+            latlngs[i][0], latlngs[i][1]
+        );
+    }
+
+    // Calculate duration
+    let startTime, endTime;
+    if (data[0].timestamp && data[data.length - 1].timestamp) {
+        startTime = new Date(data[0].timestamp);
+        endTime = new Date(data[data.length - 1].timestamp);
+    } else {
+        // If no timestamps, use estimated times
+        startTime = new Date(Date.now() - (data.length * 5 * 60 * 1000));
+        endTime = new Date();
+    }
+    
+    const durationMinutes = Math.round((endTime - startTime) / 1000 / 60);
+    
+    // Calculate average speed
+    const durationHours = durationMinutes / 60;
+    const avgSpeed = durationHours > 0 ? (totalDistance / durationHours).toFixed(1) : 0;
+
+    // Update stats grid
+    document.getElementById('totalPoints').textContent = data.length;
+    document.getElementById('totalDistance').textContent = totalDistance.toFixed(2);
+    document.getElementById('totalDuration').textContent = durationMinutes;
+    document.getElementById('avgSpeed').textContent = avgSpeed;
+}
+
+function displayTimeline(data) {
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = '';
+
+    // Show last 10 points (or all if less)
+    const pointsToShow = Math.min(data.length, 10);
+    const startIndex = Math.max(0, data.length - pointsToShow);
+
+    for (let i = startIndex; i < data.length; i++) {
+        const point = data[i];
+        const time = point.timestamp ? new Date(point.timestamp).toLocaleTimeString() : 'N/A';
+
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+
+        let badge = '';
+        if (i === 0) {
+            badge = '<span class="timeline-badge" style="background: rgba(6, 214, 160, 0.1); color: #06d6a0;">Start</span>';
+        } else if (i === data.length - 1) {
+            badge = '<span class="timeline-badge" style="background: rgba(239, 71, 111, 0.1); color: #ef476f;">End</span>';
+        }
+
+        item.innerHTML = `
+            <div class="timeline-time">${time}</div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <span class="timeline-coords">${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}</span>
+                ${badge}
+            </div>
+        `;
+
+        timeline.appendChild(item);
+    }
+}
+
+function clearMap() {
+    if (polylineLayer) map.removeLayer(polylineLayer);
+    if (startMarker) map.removeLayer(startMarker);
+    if (endMarker) map.removeLayer(endMarker);
+    
+    // Clear waypoint markers if any
+    waypointMarkers.forEach(marker => {
+        if (map) map.removeLayer(marker);
+    });
+    waypointMarkers = [];
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function showEmptyState(message, type = 'info') {
+    const emptyState = document.getElementById('emptyState');
+    emptyState.style.display = 'block';
+    
+    // Set icon based on type
+    let icon = 'fa-map-marked-alt';
+    if (type === 'error') icon = 'fa-exclamation-circle';
+    if (type === 'warning') icon = 'fa-exclamation-triangle';
+    if (type === 'success') icon = 'fa-check-circle';
+    
+    emptyState.innerHTML = `
+        <i class="fas ${icon}" style="color: ${type === 'error' ? '#ef476f' : type === 'warning' ? '#ffd166' : '#4361ee'};"></i>
+        <h3>${type === 'error' ? 'Error' : type === 'warning' ? 'Warning' : 'No Data'}</h3>
+        <p>${message}</p>
+    `;
+    
+    // Hide other sections
+    document.getElementById('statsGrid').style.display = 'none';
+    document.getElementById('timelineSection').style.display = 'none';
+    document.getElementById('mapOverlay').style.display = 'none';
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    
+    const colors = {
+        success: '#06d6a0',
+        error: '#ef476f',
+        warning: '#ffd166',
+        info: '#4361ee'
+    };
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 10px;
+        background: ${colors[type]};
+        color: white;
+        font-weight: 600;
+        z-index: 9999;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease;
+    `;
+    
+    notification.innerHTML = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    
+    .custom-marker-start, .custom-marker-end {
+        background: transparent;
+        border: none;
+    }
+`;
+document.head.appendChild(style);
+
+function toggleFullscreenMap() {
+    const mapContainer = document.querySelector('.map-wrapper');
+
+    if (!document.fullscreenElement) {
+        mapContainer.requestFullscreen().then(() => {
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
+        });
+    } else {
+        document.exitFullscreen().then(() => {
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
+        });
+    }
+}
+</script>
+</body>
+</html>
