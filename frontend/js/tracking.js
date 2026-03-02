@@ -1,5 +1,6 @@
 // Backend URL - MAKE SURE THIS IS CORRECT
-const BACKEND_URL = 'http://localhost:8000/api/v1';
+// const BACKEND_URL = 'http://localhost:8000/api/v1';
+const BACKEND_URL = 'https://track-me-backend-rzto.onrender.com/api/v1';
 
 let trackingInterval;
 let currentUser = 'user101';
