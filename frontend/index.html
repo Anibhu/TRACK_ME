@@ -1,50 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Location Tracker</title>
-    <link rel="stylesheet" href="css/style.css">
-    <!-- Add this in the head section -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Location Tracker</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
 </head>
+
 <body>
-    <div class="container">
-        <h1>📍Location Tracker1📍</h1>
-        
-        <div class="user-section">
-            <label for="userId">User ID:</label>
-            <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
-            <button onclick="updateUserId()">Update User</button>
-        </div>
 
-        <div class="status">
-            <p id="status">Ready to track location...</p>
-            <p id="currentLocation">No location data yet</p>
-        </div>
+<div class="container">
 
-        <div class="controls">
-            <button onclick="startTracking()" id="startBtn">Start Tracking</button>
-            <button onclick="stopTracking()" id="stopBtn" disabled>Stop Tracking</button>
-        </div>
-        
-        <div class="navigation">
-            <a href="view_path.html" class="nav-link">View User Paths →</a>
-        </div>
+<h1>📍 Location Tracker</h1>
 
-        <div class="map-container">
-            <div id="map"></div>
-            <button class="fullscreen-btn" onclick="toggleFullscreenMap()">⛶</button>
-        </div>
+<div class="user-section">
 
-    </div>
+<label for="userId">
+<i class="fa fa-user"></i> User ID:
+</label>
 
-    <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<input type="text" id="userId" placeholder="Enter your user ID" value="user101">
+
+<button onclick="updateUserId()">
+<i class="fa fa-sync"></i> Update User
+</button>
+
+</div>
+
+
+<div class="status">
+
+<p id="status">
+<i class="fa fa-info-circle"></i> Ready to track location...
+</p>
+
+<p id="currentLocation">
+<i class="fa fa-map-marker-alt"></i> No location data yet
+</p>
+
+</div>
+
+
+<!-- ===============================
+     CONTROLS SECTION
+================================ -->
+<div class="controls">
+
+    <button onclick="startTracking()" id="startBtn">
+        <i class="fa fa-play"></i> Start Tracking
+    </button>
     
-    <!-- App JS -->
-    <script src="js/map.js"></script>
-    <script src="js/tracking.js"></script>
+    <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
+        <i class="fa fa-exclamation-triangle"></i> EMERGENCY
+    </button>
+
+    <!-- 🔥 NEW STOP EMERGENCY BUTTON -->
+    <button onclick="stopEmergency()" id="stopEmergencyBtn" disabled style="background-color:#6b7280;">
+        <i class="fa fa-ban"></i> Stop Emergency
+    </button>
+
+    <button onclick="stopTracking()" id="stopBtn" disabled>
+        <i class="fa fa-stop"></i> Stop Tracking
+    </button>
+
+</div>
+
+
+<div class="navigation">
+
+<a href="view_path.html" class="nav-link">
+<i class="fa fa-route"></i> View User Paths →
+</a>
+
+</div>
+
+
+<div class="map-container">
+
+<div id="map"></div>
+
+<button class="fullscreen-btn" onclick="toggleFullscreenMap()">
+⛶
+</button>
+
+</div>
+
+</div>
+
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="js/map.js"></script>
+<script src="js/tracking.js"></script>
+
 </body>
 </html>
+
+
+
+
+
+
+
