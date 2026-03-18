@@ -13,7 +13,10 @@ const geofenceCoords = [
     [26.547254, 88.704008],  // South-East
     
 ];
+const geofenceLngLat = geofenceLatLng.map(([lat, lng]) => [lng, lat]);
 
+// close polygon (important)
+geofenceLngLat.push(geofenceLngLat[0]);
 
 // ===============================
 // MAP MANAGER CLASS
