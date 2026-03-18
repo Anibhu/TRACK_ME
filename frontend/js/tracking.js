@@ -223,7 +223,40 @@ function startTracking() {
             const lng = position.coords.longitude;
 
             updateCurrentLocation(lat, lng);
-            checkGeofence(lat, lng);
+            function checkGeofence(lat, lng) {
+              if (typeof turf === "undefined") {
+                  console.error("Turf not loaded");
+                  return;
+              }
+          
+              if (!window.trackingMap) return;
+          
+              // Convert Leaflet coords → Turf format
+              const geofenceLatLng = window.trackingMap.geofence.getLatLngs()[0];
+          
+              const geofenceLngLat = geofenceLatLng.map(p => [p.lng, p.lat]);
+          
+              // Close polygon (VERY IMPORTANT)
+              geofenceLngLat.push(geofenceLngLat[0]);
+          
+              const point = turf.point([lng, lat]);
+              const polygon = turf.polygon([geofenceLngLat]);
+          
+              const isInside = turf.booleanPointInPolygon(point, polygon);
+          
+              if (isInside) {
+                  updateStatus("Inside Geofence");
+                  wasOutside = false;
+              } else {
+                  updateStatus("Outside Geofence");
+          
+                  if (!wasOutside) {
+                      alert("Boundary crossed!");
+                      wasOutside = true;
+                  }
+              }
+          }
+
             await sendLocationToServer(lat, lng);
 
             if (window.trackingMap) {
