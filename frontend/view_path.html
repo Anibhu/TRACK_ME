@@ -135,7 +135,18 @@ let polylineLayer = null;
 let startMarker = null;
 let endMarker = null;
 let waypointMarkers = [];
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if user is logged in
+    const session = localStorage.getItem("supabase_session");
+    if (!session) {
+        alert("Please login first.");
+        window.location.href = "index.html";
+        return;
+    }
 
+    initMap();
+    loadUsers();
+});
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     loadUsers();
@@ -167,11 +178,18 @@ async function loadUsers() {
             select.appendChild(option);
         });
 
-        // Show empty state with user count
+        // --- ADD THIS PART ---
+        const savedUserId = localStorage.getItem("user_id");
+        if (savedUserId) {
+            select.value = savedUserId; // Automatically select the logged-in user
+            loadPath(); // Optional: Automatically load their path immediately
+        }
+        // ---------------------
+
         if (users.length > 0) {
-            showEmptyState(`Found ${users.length} users. Select one to view their path.`, 'info');
+            showEmptyState(`Found ${users.length} users.`, 'info');
         } else {
-            showEmptyState('No users found. Track some locations first.', 'warning');
+            showEmptyState('No users found.', 'warning');
         }
 
     } catch (error) {
