@@ -29,10 +29,8 @@ async def save_user_location(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error saving location: {str(e)}"
-        )
+        print(f"SAVE ERROR: {e}") # This helps you see the error in Render logs
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ===============================
