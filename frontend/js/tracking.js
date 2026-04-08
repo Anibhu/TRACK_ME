@@ -45,9 +45,13 @@ async function sendLocationToServer(latitude, longitude) {
     // ✅ Get the token we saved during login
     const sessionData = JSON.parse(localStorage.getItem("supabase_session"));
     const token = sessionData?.access_token;
-
+    const savedUserId = localStorage.getItem("user_id") || document.getElementById("userId")?.value;
+    if (!savedUserId) {
+        console.error("No User ID found. Cannot track location.");
+        return;
+    }
     try {
-        await fetch(`${BACKEND_URL}/locations/save`, {
+        await fetch(`https://track-me-backend-rzto.onrender.com/api/v1/locations/save`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -60,6 +64,10 @@ async function sendLocationToServer(latitude, longitude) {
                 timestamp: Date.now()
             })
         });
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Server rejected data:", errorData);
+        }
     } catch (error) {
         console.error("Network error:", error);
     }
