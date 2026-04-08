@@ -224,7 +224,11 @@ function logout() {
 function showApp() {
     document.getElementById("authSection").style.display = "none";
     document.getElementById("app").style.display = "block";
-    
+    if (!window.trackingMap) {
+        window.trackingMap = new MapManager('map');
+    } else {
+        window.trackingMap.map.invalidateSize(); // force Leaflet to recalculate
+    }
     const savedId = localStorage.getItem("user_id");
     if(savedId) {
         document.getElementById("userId").value = savedId;

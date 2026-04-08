@@ -5,7 +5,7 @@ from datetime import datetime
 class LocationBase(BaseModel):
     latitude: float
     longitude: float
-    user_id: str
+    user_id:Optional[str] = None
 
 class LocationCreate(LocationBase):
     timestamp: Optional[float] = None

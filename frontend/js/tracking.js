@@ -51,7 +51,7 @@ async function sendLocationToServer(latitude, longitude) {
         return;
     }
     try {
-        await fetch(`https://track-me-backend-rzto.onrender.com/api/v1/locations/save`, {
+        const response =await fetch(`https://track-me-backend-rzto.onrender.com/api/v1/locations/save`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
