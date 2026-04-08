@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models.schemas import APIResponse, UserStats
 from database.database import get_all_users, get_user_stats
 from typing import List
+from dependencies import get_current_user
 
 router = APIRouter()
 
@@ -20,18 +21,15 @@ async def get_all_tracked_users():
             detail=f"Error retrieving users: {str(e)}"
         )
 
-@router.get("/users/{user_id}/stats", response_model=UserStats)
-async def get_user_statistics(user_id: str):
-    """
-    Get statistics for a specific user
-    """
+@router.get("/users/me/stats", response_model=UserStats)
+async def get_my_statistics(current_user: str = Depends(get_current_user)):
     try:
-        stats = get_user_stats(user_id)
+        stats = get_user_stats(current_user)
         
         if not stats:
             raise HTTPException(
                 status_code=404, 
-                detail=f"No statistics found for user: {user_id}"
+                detail="No statistics found for this user"
             )
         
         return UserStats(**stats)
@@ -44,18 +42,15 @@ async def get_user_statistics(user_id: str):
             detail=f"Error retrieving user statistics: {str(e)}"
         )
 
-@router.get("/users/{user_id}/exists")
-async def check_user_exists(user_id: str):
-    """
-    Check if a user exists in the database
-    """
+@router.get("/users/me/exists")
+async def check_user_exists(current_user: str = Depends(get_current_user)):
     try:
         users = get_all_users()
-        exists = user_id in users
+        exists = current_user in users
         
         return APIResponse(
             status="success",
-            message=f"User {user_id} {'exists' if exists else 'does not exist'}",
+            message=f"User {'exists' if exists else 'does not exist'}",
             data={"exists": exists}
         )
     

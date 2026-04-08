@@ -15,83 +15,121 @@
 </head>
 
 <body>
+<div id="authSection" class="auth-wrapper">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="fas fa-map-marker-alt" style="color:white;"></i>
+      </div>
+      <h2>NexusTracker</h2>
+      <p>Secure real-time location intelligence</p>
+    </div>
 
-<div class="container">
+    <div class="input-group">
+      <i class="fas fa-envelope"></i>
+      <input type="email" id="email" placeholder="Email address" autocomplete="email">
+    </div>
+    <div class="input-group">
+      <i class="fas fa-lock"></i>
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+    </div>
 
-<h1>📍 Location Tracker</h1>
-
-<div class="user-section">
-
-<label for="userId">
-<i class="fa fa-user"></i> User ID:
-</label>
-
-<input type="text" id="userId" placeholder="Enter your user ID" value="user101">
-
-<button onclick="updateUserId()">
-<i class="fa fa-sync"></i> Update User
-</button>
-
+    <div class="action-buttons">
+      <button class="btn btn-primary" onclick="login()">
+        <i class="fas fa-arrow-right-to-bracket"></i> Login
+      </button>
+      <button class="btn btn-secondary" onclick="signup()">
+        <i class="fas fa-user-plus"></i> Signup
+      </button>
+    </div>
+    <div id="authResult" class="auth-message">
+      <i class="fas fa-shield-alt"></i> Welcome back, authenticate to continue
+    </div>
+    <div style="margin-top: 0.8rem; text-align: center; font-size: 0.7rem; color:#5b6e8c">
+      Demo: any email & password (mock API)
+    </div>
+  </div>
 </div>
+<div class="container" id="app" style="display:none;">
+    <div class="container">
 
-
-<div class="status">
-
-<p id="status">
-<i class="fa fa-info-circle"></i> Ready to track location...
-</p>
-
-<p id="currentLocation">
-<i class="fa fa-map-marker-alt"></i> No location data yet
-</p>
-
-</div>
-
-
-<!-- ===============================
-     CONTROLS SECTION
-================================ -->
-<div class="controls">
-
-    <button onclick="startTracking()" id="startBtn">
-        <i class="fa fa-play"></i> Start Tracking
+    <h1>📍 Location Tracker</h1>
+    <button class="btn btn-danger" onclick="logout()" style="background-color: #ef4444; color: white; padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer;">
+      <i class="fas fa-sign-out-alt"></i> Logout
     </button>
-    
-    <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
-        <i class="fa fa-exclamation-triangle"></i> EMERGENCY
+    <div class="user-section">
+
+    <label for="userId">
+    <i class="fa fa-user"></i> User ID:
+    </label>
+
+    <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
+
+    <button onclick="updateUserId()">
+    <i class="fa fa-sync"></i> Update User
     </button>
 
-    <!-- 🔥 NEW STOP EMERGENCY BUTTON -->
-    <button onclick="stopEmergency()" id="stopEmergencyBtn" disabled style="background-color:#6b7280;">
-        <i class="fa fa-ban"></i> Stop Emergency
+    </div>
+
+
+    <div class="status">
+
+    <p id="status">
+    <i class="fa fa-info-circle"></i> Ready to track location...
+    </p>
+
+    <p id="currentLocation">
+    <i class="fa fa-map-marker-alt"></i> No location data yet
+    </p>
+
+    </div>
+
+
+    <!-- ===============================
+        CONTROLS SECTION
+    ================================ -->
+    <div class="controls">
+
+        <button onclick="startTracking()" id="startBtn">
+            <i class="fa fa-play"></i> Start Tracking
+        </button>
+        
+        <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
+            <i class="fa fa-exclamation-triangle"></i> EMERGENCY
+        </button>
+
+        <!-- 🔥 NEW STOP EMERGENCY BUTTON -->
+        <button onclick="stopEmergency()" id="stopEmergencyBtn" disabled style="background-color:#6b7280;">
+            <i class="fa fa-ban"></i> Stop Emergency
+        </button>
+
+        <button onclick="stopTracking()" id="stopBtn" disabled>
+            <i class="fa fa-stop"></i> Stop Tracking
+        </button>
+
+    </div>
+
+
+    <div class="navigation">
+
+    <a href="view_path.html" class="nav-link">
+    <i class="fa fa-route"></i> View User Paths →
+    </a>
+
+    </div>
+
+
+    <div class="map-container">
+
+    <div id="map"></div>
+
+    <button class="fullscreen-btn" onclick="toggleFullscreenMap()">
+    ⛶
     </button>
 
-    <button onclick="stopTracking()" id="stopBtn" disabled>
-        <i class="fa fa-stop"></i> Stop Tracking
-    </button>
+    </div>
 
-</div>
-
-
-<div class="navigation">
-
-<a href="view_path.html" class="nav-link">
-<i class="fa fa-route"></i> View User Paths →
-</a>
-
-</div>
-
-
-<div class="map-container">
-
-<div id="map"></div>
-
-<button class="fullscreen-btn" onclick="toggleFullscreenMap()">
-⛶
-</button>
-
-</div>
-
+    </div>
 </div>
 
 
@@ -99,13 +137,120 @@
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 <script src="js/map.js"></script>
 <script src="js/tracking.js"></script>
+<script>
+// --- CONFIGURATION ---
+const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
+let idleTimer;
 
+// --- 1. SESSION CHECK ON LOAD ---
+window.onload = () => {
+    const session = localStorage.getItem("supabase_session");
+    if (session) {
+        showApp();
+        resetIdleTimer(); 
+    }
+};
+
+// --- 2. SIGNUP FUNCTION (Added this back for you) ---
+async function signup() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+        alert("Please enter both email and password");
+        return;
+    }
+
+    try {
+        const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/signup", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "success") {
+            // Log them in immediately after signup
+            localStorage.setItem("supabase_session", JSON.stringify(data.session));
+            localStorage.setItem("user_id", data.user.id);
+            
+            alert("Account created successfully!");
+            showApp();
+            resetIdleTimer();
+        } else {
+            alert("Signup failed: " + (data.detail || "User might already exist"));
+        }
+    } catch (error) {
+        document.getElementById("authResult").innerText = "Error: " + error.message;
+    }
+}
+
+// --- 3. LOGIN FUNCTION ---
+async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+        const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "success") {
+            localStorage.setItem("supabase_session", JSON.stringify(data.session));
+            localStorage.setItem("user_id", data.user.id);
+            
+            showApp();
+            resetIdleTimer();
+        } else {
+            alert("Login failed: " + data.detail);
+        }
+    } catch (error) {
+        document.getElementById("authResult").innerText = "Error: " + error.message;
+    }
+}
+
+function logout() {
+    localStorage.removeItem("supabase_session");
+    localStorage.removeItem("user_id");
+    location.reload(); 
+}
+
+// --- 4. UI TOGGLE ---
+function showApp() {
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    
+    const savedId = localStorage.getItem("user_id");
+    if(savedId) {
+        document.getElementById("userId").value = savedId;
+        // Also update the global variable used in tracking.js if it exists
+        if (typeof currentUser !== 'undefined') currentUser = savedId;
+    }
+}
+
+// --- 5. INACTIVITY LOGIC ---
+function resetIdleTimer() {
+    if (!localStorage.getItem("supabase_session")) return;
+
+    clearTimeout(idleTimer);
+    
+    idleTimer = setTimeout(() => {
+        alert("You have been logged out due to 5 minutes of inactivity.");
+        logout();
+    }, INACTIVITY_LIMIT);
+}
+
+// Listen for activity
+window.onmousemove = resetIdleTimer;
+window.onmousedown = resetIdleTimer;
+window.ontouchstart = resetIdleTimer;
+window.onclick = resetIdleTimer;
+window.onkeydown = resetIdleTimer;
+</script>
 </body>
 </html>
-
-
-
-
-
-
-

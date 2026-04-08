@@ -8,7 +8,7 @@ const BACKEND_URL = 'https://track-me-backend-rzto.onrender.com/api/v1';
 // const BACKEND_URL = 'http://localhost:8000/api/v1';
 
 let trackingInterval = null;
-let currentUser = 'user101';
+let currentUser = localStorage.getItem("user_id") || 'guest';
 let isTracking = false;
 let wasOutside = false;
 let isEmergencyActive = false;
@@ -42,10 +42,17 @@ function updateCurrentLocation(lat, lng) {
 // SEND LOCATION TO BACKEND
 // ===============================
 async function sendLocationToServer(latitude, longitude) {
+    // ✅ Get the token we saved during login
+    const sessionData = JSON.parse(localStorage.getItem("supabase_session"));
+    const token = sessionData?.access_token;
+
     try {
         await fetch(`${BACKEND_URL}/locations/save`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ✅ Send token to backend
+            },
             body: JSON.stringify({
                 user_id: currentUser,
                 latitude,
