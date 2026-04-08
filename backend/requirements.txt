@@ -6,4 +6,4 @@ aiofiles==23.2.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dotenv==0.19.2
-supabase==0.0.1
+supabase>=2.10.0
