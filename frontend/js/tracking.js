@@ -58,7 +58,7 @@ async function sendLocationToServer(latitude, longitude) {
                 'Authorization': `Bearer ${token}` // ✅ Send token to backend
             },
             body: JSON.stringify({
-                user_id: null,
+                user_id: savedUserId,
                 latitude,
                 longitude,
                 timestamp: Date.now()

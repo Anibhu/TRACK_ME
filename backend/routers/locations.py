@@ -12,11 +12,10 @@ router = APIRouter()
 # ===============================
 @router.post("/locations/save", response_model=APIResponse)
 async def save_user_location(
-    location: LocationCreate, 
-    current_user_id: str = Depends(get_current_user)):
+    location: LocationCreate):
     try:
         response = supabase.table("locations").insert({
-            "user_id": current_user_id,
+            "user_id": location.user_id,
             "lat": location.latitude,
             "lng": location.longitude,
             "timestamp": location.timestamp
