@@ -18,7 +18,7 @@ async def save_user_location(
             "user_id": location.user_id,
             "lat": location.latitude,
             "lng": location.longitude,
-            "timestamp": location.timestamp
+            "timestamp": int(location.timestamp)
         }).execute()
 
         return APIResponse(

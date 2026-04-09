@@ -61,7 +61,7 @@ async function sendLocationToServer(latitude, longitude) {
                 user_id: savedUserId,
                 latitude,
                 longitude,
-                timestamp: Date.now()
+                timestamp: Math.floor(Date.now())
             })
         });
         if (!response.ok) {
