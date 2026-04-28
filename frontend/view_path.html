@@ -39,6 +39,10 @@
                     <i class="fas fa-map-marked-alt"></i>
                     <span>Load Journey</span>
                 </button>
+                <button onclick="resetData()" id="resetBtn" class="load-btn" style="background-color: #ef476f; margin-top: 10px;">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Reset All Data</span>
+                </button>
             </div>
             
             <!-- Navigation -->
@@ -496,6 +500,36 @@ function toggleFullscreenMap() {
                 if (map) map.invalidateSize();
             }, 300);
         });
+    }
+}
+//   Reset Data -->
+async function resetData() {
+    const user = document.getElementById('userSelect').value;
+    if (!user) {
+        alert("Please select a user first.");
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to permanently erase all location data for ${user}?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/locations/user/${user}`, {
+            method: 'DELETE',
+        });
+
+        if (response.ok) {
+            showNotification("Data erased successfully!", "success");
+            clearMap();
+            document.getElementById('statsGrid').style.display = 'none';
+            document.getElementById('timelineSection').style.display = 'none';
+            showEmptyState("Data cleared.");
+        } else {
+            throw new Error("Failed to delete data.");
+        }
+    } catch (error) {
+        showNotification("Error: " + error.message, "error");
     }
 }
 </script>
