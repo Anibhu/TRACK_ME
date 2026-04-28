@@ -515,11 +515,24 @@ async function resetData() {
     }
 
     try {
+        // ✅ Get the token from localStorage
+        const sessionData = JSON.parse(localStorage.getItem("supabase_session"));
+        const token = sessionData?.access_token;
+
         const response = await fetch(`${BACKEND_URL}/locations/user/${user}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // ✅ Pass token to satisfy RLS Policy
+            }
         });
 
-        if (!response.ok) throw new Error("Failed to delete data from server");
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || "Failed to delete data");
+        }
+
+        // ... (rest of your UI clearing code stays the same)
 
         // 1. Clear the Map
         clearMap();
