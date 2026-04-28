@@ -89,3 +89,28 @@ async def get_recent_locations(user_id: str, count: int = 10):
             status_code=500,
             detail=f"Error retrieving recent locations: {str(e)}"
         )
+    
+# ===============================
+# DELETE USER LOCATIONS (RESET)
+# ===============================
+@router.delete("/locations/user/{user_id}", response_model=APIResponse)
+async def delete_user_locations(user_id: str):
+    try:
+        # Delete all rows in the 'locations' table matching the user_id
+        response = supabase.table("locations") \
+            .delete() \
+            .eq("user_id", user_id) \
+            .execute()
+
+        return APIResponse(
+            status="success",
+            message=f"All journey data for {user_id} has been erased.",
+            data=response.data
+        )
+
+    except Exception as e:
+        print(f"DELETE ERROR: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to clear data: {str(e)}"
+        )

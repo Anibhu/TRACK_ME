@@ -506,30 +506,41 @@ function toggleFullscreenMap() {
 async function resetData() {
     const user = document.getElementById('userSelect').value;
     if (!user) {
-        alert("Please select a user first.");
+        showNotification('Please select a user to reset', 'warning');
         return;
     }
 
-    if (!confirm(`Are you sure you want to permanently erase all location data for ${user}?`)) {
+    if (!confirm(`Are you sure? This will permanently delete the journey for ${user}.`)) {
         return;
     }
 
     try {
         const response = await fetch(`${BACKEND_URL}/locations/user/${user}`, {
-            method: 'DELETE',
+            method: 'DELETE'
         });
 
-        if (response.ok) {
-            showNotification("Data erased successfully!", "success");
-            clearMap();
-            document.getElementById('statsGrid').style.display = 'none';
-            document.getElementById('timelineSection').style.display = 'none';
-            showEmptyState("Data cleared.");
-        } else {
-            throw new Error("Failed to delete data.");
-        }
+        if (!response.ok) throw new Error("Failed to delete data from server");
+
+        // 1. Clear the Map
+        clearMap();
+
+        // 2. Clear the Stats displayed on screen
+        document.getElementById('totalPoints').textContent = '0';
+        document.getElementById('totalDistance').textContent = '0';
+        document.getElementById('totalDuration').textContent = '0';
+        document.getElementById('avgSpeed').textContent = '0';
+
+        // 3. Hide sections and show empty state
+        document.getElementById('statsGrid').style.display = 'none';
+        document.getElementById('timelineSection').style.display = 'none';
+        document.getElementById('mapOverlay').style.display = 'none';
+        
+        showEmptyState(`Data for ${user} has been cleared.`, 'success');
+        showNotification("Journey reset successfully", "success");
+
     } catch (error) {
-        showNotification("Error: " + error.message, "error");
+        console.error('Reset error:', error);
+        showNotification(error.message, 'error');
     }
 }
 </script>
