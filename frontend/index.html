@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,16 +8,17 @@
 <title>Location Tracker</title>
 
 <link rel="stylesheet" href="css/style.css">
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 </head>
 
 <body>
+
+<!-- ================= AUTH SECTION ================= -->
 <div id="authSection" class="auth-wrapper">
   <div class="auth-card">
+
     <div class="brand">
       <div class="brand-icon">
         <i class="fas fa-map-marker-alt" style="color:white;"></i>
@@ -25,236 +27,228 @@
       <p>Secure real-time location intelligence</p>
     </div>
 
+    <!-- EMAIL -->
     <div class="input-group">
       <i class="fas fa-envelope"></i>
-      <input type="email" id="email" placeholder="Email address" autocomplete="email">
-    </div>
-    <div class="input-group">
-      <i class="fas fa-lock"></i>
-      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+      <input type="email" id="email" placeholder="Email address">
     </div>
 
+    <!-- PASSWORD -->
+    <div class="input-group">
+      <i class="fas fa-lock"></i>
+      <input type="password" id="password" placeholder="Password">
+    </div>
+
+    <!-- 🔥 COLLEGE SELECT -->
+    <div class="input-group">
+      <i class="fas fa-university"></i>
+      <select id="college">
+        <option value="">Select College</option>
+        <option value="JGEC">JGEC</option>
+        <option value="CGEC">CGEC</option>
+      </select>
+    </div>
+
+    <!-- BUTTONS -->
     <div class="action-buttons">
       <button class="btn btn-primary" onclick="login()">
         <i class="fas fa-arrow-right-to-bracket"></i> Login
       </button>
+
       <button class="btn btn-secondary" onclick="signup()">
         <i class="fas fa-user-plus"></i> Signup
       </button>
     </div>
+
     <div id="authResult" class="auth-message">
-      <i class="fas fa-shield-alt"></i> Welcome back, authenticate to continue
+      Welcome back, authenticate to continue
     </div>
-    <div style="margin-top: 0.8rem; text-align: center; font-size: 0.7rem; color:#5b6e8c">
-      Demo: any email & password (mock API)
-    </div>
+
   </div>
 </div>
+
+
+<!-- ================= APP SECTION ================= -->
 <div class="container" id="app" style="display:none;">
-    <div class="container">
+<div class="container">
 
-    <h1>📍 Location Tracker</h1>
-    <button class="btn btn-danger" onclick="logout()" style="background-color: #ef4444; color: white; padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer;">
-      <i class="fas fa-sign-out-alt"></i> Logout
-    </button>
-    <div class="user-section">
+<h1>📍 Location Tracker</h1>
 
-    <label for="userId">
-    <i class="fa fa-user"></i> User ID:
-    </label>
+<button onclick="logout()" style="background:#ef4444;color:white;padding:10px;border:none;border-radius:8px;">
+Logout
+</button>
 
-    <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
+<h3 id="collegeName"></h3>
 
-    <button onclick="updateUserId()">
-    <i class="fa fa-sync"></i> Update User
-    </button>
+<!-- USER -->
+<div class="user-section">
+<label>User ID:</label>
+<input type="text" id="userId" value="user101">
+<button onclick="updateUserId()">Update</button>
+</div>
 
-    </div>
+<!-- STATUS -->
+<div class="status">
+<p id="status">Ready to track location...</p>
+<p id="currentLocation">No location data yet</p>
+</div>
 
+<!-- CONTROLS -->
+<div class="controls">
+<button onclick="startTracking()" id="startBtn">Start Tracking</button>
+<button onclick="triggerEmergency()" id="emergencyBtn">EMERGENCY</button>
+<button onclick="stopEmergency()" id="stopEmergencyBtn" disabled>Stop Emergency</button>
+<button onclick="stopTracking()" id="stopBtn" disabled>Stop Tracking</button>
+</div>
 
-    <div class="status">
+<!-- NAV -->
+<div class="navigation">
+<a href="view_path.html">View User Paths →</a>
+</div>
 
-    <p id="status">
-    <i class="fa fa-info-circle"></i> Ready to track location...
-    </p>
+<!-- MAP -->
+<div class="map-container">
+<div id="map"></div>
+</div>
 
-    <p id="currentLocation">
-    <i class="fa fa-map-marker-alt"></i> No location data yet
-    </p>
-
-    </div>
-
-
-    <!-- ===============================
-        CONTROLS SECTION
-    ================================ -->
-    <div class="controls">
-
-        <button onclick="startTracking()" id="startBtn">
-            <i class="fa fa-play"></i> Start Tracking
-        </button>
-        
-        <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
-            <i class="fa fa-exclamation-triangle"></i> EMERGENCY
-        </button>
-
-        <!-- 🔥 NEW STOP EMERGENCY BUTTON -->
-        <button onclick="stopEmergency()" id="stopEmergencyBtn" disabled style="background-color:#6b7280;">
-            <i class="fa fa-ban"></i> Stop Emergency
-        </button>
-
-        <button onclick="stopTracking()" id="stopBtn" disabled>
-            <i class="fa fa-stop"></i> Stop Tracking
-        </button>
-
-    </div>
-
-
-    <div class="navigation">
-
-    <a href="view_path.html" class="nav-link">
-    <i class="fa fa-route"></i> View User Paths →
-    </a>
-
-    </div>
-
-
-    <div class="map-container">
-
-    <div id="map"></div>
-
-    <button class="fullscreen-btn" onclick="toggleFullscreenMap()">
-    ⛶
-    </button>
-
-    </div>
-
-    </div>
+</div>
 </div>
 
 
+<!-- ================= SCRIPTS ================= -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 <script src="js/map.js"></script>
 <script src="js/tracking.js"></script>
+
 <script>
-// --- CONFIGURATION ---
-const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
+
+// ================= CONFIG =================
+const INACTIVITY_LIMIT = 5 * 60 * 1000;
 let idleTimer;
 
-// --- 1. SESSION CHECK ON LOAD ---
+
+// ================= LOAD =================
 window.onload = () => {
     const session = localStorage.getItem("supabase_session");
-    if (session) {
+    const college = localStorage.getItem("college");
+
+    if (session && college) {
         showApp();
-        resetIdleTimer(); 
+        resetIdleTimer();
     }
 };
 
-// --- 2. SIGNUP FUNCTION (Added this back for you) ---
+
+// ================= SIGNUP =================
 async function signup() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
+    const college = document.getElementById("college").value;
 
-    if (!email || !password) {
-        alert("Please enter both email and password");
+    if (!email || !password || !college) {
+        alert("Fill all fields");
         return;
     }
 
-    try {
-        const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/signup", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ email, password })
-        });
+    const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/signup", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ email, password, college })
+    });
 
-        const data = await res.json();
+    const data = await res.json();
 
-        if (data.status === "success") {
-            // Log them in immediately after signup
-            localStorage.setItem("supabase_session", JSON.stringify(data.session));
-            localStorage.setItem("user_id", data.user.id);
-            
-            alert("Account created successfully!");
-            showApp();
-            resetIdleTimer();
-        } else {
-            alert("Signup failed: " + (data.detail || "User might already exist"));
-        }
-    } catch (error) {
-        document.getElementById("authResult").innerText = "Error: " + error.message;
+    if (data.status === "success") {
+        localStorage.setItem("supabase_session", JSON.stringify(data.session));
+        localStorage.setItem("user_id", data.user.id);
+        localStorage.setItem("college", data.college);
+
+        showApp();
+    } else {
+        alert(data.detail);
     }
 }
 
-// --- 3. LOGIN FUNCTION ---
+
+// ================= LOGIN =================
 async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
+    const college = document.getElementById("college").value;
 
-    try {
-        const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/login", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ email, password })
-        });
+    if (!college) {
+        alert("Select college");
+        return;
+    }
 
-        const data = await res.json();
+    const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ email, password, college })
+    });
 
-        if (data.status === "success") {
-            localStorage.setItem("supabase_session", JSON.stringify(data.session));
-            localStorage.setItem("user_id", data.user.id);
-            
-            showApp();
-            resetIdleTimer();
-        } else {
-            alert("Login failed: " + data.detail);
-        }
-    } catch (error) {
-        document.getElementById("authResult").innerText = "Error: " + error.message;
+    const data = await res.json();
+
+    if (data.status === "success") {
+        localStorage.setItem("supabase_session", JSON.stringify(data.session));
+        localStorage.setItem("user_id", data.user.id);
+        localStorage.setItem("college", data.college);
+
+        showApp();
+    } else {
+        alert(data.detail);
     }
 }
 
+
+// ================= LOGOUT =================
 function logout() {
-    localStorage.removeItem("supabase_session");
-    localStorage.removeItem("user_id");
-    location.reload(); 
+    localStorage.clear();
+    location.reload();
 }
 
-// --- 4. UI TOGGLE ---
+
+// ================= SHOW APP =================
 function showApp() {
+    const college = localStorage.getItem("college");
+
+    if (!college) {
+        logout();
+        return;
+    }
+
     document.getElementById("authSection").style.display = "none";
     document.getElementById("app").style.display = "block";
+
+    document.getElementById("collegeName").innerText = "College: " + college;
+
     if (!window.trackingMap) {
         window.trackingMap = new MapManager('map');
     } else {
-        window.trackingMap.map.invalidateSize(); // force Leaflet to recalculate
+        window.trackingMap.map.invalidateSize();
     }
+
     const savedId = localStorage.getItem("user_id");
-    if(savedId) {
-        document.getElementById("userId").value = savedId;
-        // Also update the global variable used in tracking.js if it exists
-        if (typeof currentUser !== 'undefined') currentUser = savedId;
-    }
+    if(savedId) document.getElementById("userId").value = savedId;
 }
 
-// --- 5. INACTIVITY LOGIC ---
-function resetIdleTimer() {
-    if (!localStorage.getItem("supabase_session")) return;
 
+// ================= INACTIVITY =================
+function resetIdleTimer() {
     clearTimeout(idleTimer);
-    
+
     idleTimer = setTimeout(() => {
-        alert("You have been logged out due to 5 minutes of inactivity.");
+        alert("Logged out due to inactivity");
         logout();
     }, INACTIVITY_LIMIT);
 }
 
-// Listen for activity
-window.onmousemove = resetIdleTimer;
-window.onmousedown = resetIdleTimer;
-window.ontouchstart = resetIdleTimer;
 window.onclick = resetIdleTimer;
+window.onmousemove = resetIdleTimer;
 window.onkeydown = resetIdleTimer;
+
 </script>
+
 </body>
 </html>
