@@ -1,22 +1,48 @@
-// ===============================
-// JALPAIGURI GEOFENCE COORDINATES
-// ===============================
-const geofenceCoords = [
-    [26.545263,88.704591],  // North-West corner
-    [26.544896, 88.701020],
-    [26.546974, 88.699489],
-    [26.547673, 88.697415],  // North-East
-    [26.550592, 88.695449],
-    [26.550562, 88.69886],  // East
-    [26.549952, 88.701505],
-    [26.548713, 88.703079], 
-    [26.547254, 88.704008],  // South-East
-    
-];
-const geofenceLngLat = geofenceCoords.map(([lat, lng]) => [lng, lat]);
 
-// close polygon (important)
-geofenceLngLat.push(geofenceLngLat[0]);
+// ===============================
+// COLLEGE CONFIG
+// ===============================
+const COLLEGE_CONFIG = {
+    JGEC: {
+        type: "polygon",
+        coords: [
+            [26.545263,88.704591],
+            [26.544896,88.701020],
+            [26.546974,88.699489],
+            [26.547673,88.697415],
+            [26.550592,88.695449],
+            [26.550562,88.69886],
+            [26.549952,88.701505],
+            [26.548713,88.703079],
+            [26.547254,88.704008],
+        ],
+        color: "red"
+    },
+
+    CGEC: {
+        type: "circle",
+        center: [26.7020, 88.3700], // 🔥 change if needed
+        radius: 500, // meters
+        color: "blue"
+    }
+};
+
+
+// ===============================
+// GET ACTIVE COLLEGE CONFIG
+// ===============================
+function getCollegeConfig() {
+    const college = localStorage.getItem("college");
+
+    if (!college || !COLLEGE_CONFIG[college]) {
+        alert("Invalid college. Please login again.");
+        location.reload();
+        return null;
+    }
+
+    return COLLEGE_CONFIG[college];
+}
+
 
 // ===============================
 // MAP MANAGER CLASS
@@ -36,20 +62,36 @@ class MapManager {
         this.markers = [];
         this.polylines = [];
 
-        // Add geofence automatically when map loads
+        // 🔥 load correct geofence
         this.addGeofence();
     }
 
     // ===============================
-    // ADD GEOFENCE
+    // ADD GEOFENCE (DYNAMIC)
     // ===============================
     addGeofence() {
-        this.geofence = L.polygon(geofenceCoords, {
-            color: 'red',
-            fillColor: '#ff0000',
-            fillOpacity: 0.3,
-            weight: 2
-        }).addTo(this.map);
+        const config = getCollegeConfig();
+        if (!config) return;
+
+        if (config.type === "polygon") {
+            // 🔥 JGEC polygon
+            this.geofence = L.polygon(config.coords, {
+                color: config.color,
+                fillColor: config.color,
+                fillOpacity: 0.3,
+                weight: 2
+            }).addTo(this.map);
+
+        } else if (config.type === "circle") {
+            // 🔥 CGEC circle
+            this.geofence = L.circle(config.center, {
+                radius: config.radius,
+                color: config.color,
+                fillColor: config.color,
+                fillOpacity: 0.3,
+                weight: 2
+            }).addTo(this.map);
+        }
 
         this.map.fitBounds(this.geofence.getBounds());
     }
@@ -110,6 +152,7 @@ class MapManager {
     }
 }
 
+
 // ===============================
 // INITIALIZATION FUNCTIONS
 // ===============================
@@ -125,6 +168,7 @@ function initPathViewMap() {
     }
 }
 
+
 // ===============================
 // AUTO INIT BASED ON PAGE
 // ===============================
@@ -135,3 +179,5 @@ document.addEventListener('DOMContentLoaded', function () {
         initTrackingMap();
     }
 });
+
+
