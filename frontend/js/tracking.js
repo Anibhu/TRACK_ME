@@ -1,14 +1,35 @@
 
-
-// Backend URL - MAKE SURE THIS IS CORRECT
-// const BACKEND_URL = 'http://localhost:8000/api/v1';
+// Backend URL
 const BACKEND_URL = 'https://track-me-backend-rzto.onrender.com/api/v1';
+
+
+// ===============================
+// EMERGENCY LOCATIONS (MANUAL)
+// ===============================
+const EMERGENCY_HOSPITALS = [
+    { name: "Jalpaiguri District Hospital",          lat: 26.5244, lon: 88.7197, ph: 9474122840 },
+    { name: "North Bengal Medical College and Hospital", lat: 26.6873, lon: 88.3945, ph: 9474122840 },
+    { name: "Maynaguri Rural Hospital",              lat: 26.5652, lon: 88.8196, ph: 9474122840 },
+    { name: "Arogya Nursing Home (Jalpaiguri)",      lat: 26.5258, lon: 88.7229, ph: 9474122840 }
+];
+
+const EMERGENCY_POLICE_STATIONS = [
+    { name: "Kotwali Police Station (Jalpaiguri)",   lat: 26.5246, lon: 88.7266, ph: 9474122840 },
+    { name: "Maynaguri Police Station",              lat: 26.5625, lon: 88.8210, ph: 9474122840 }
+];
+
+// Emergency markers stored separately so clearMarkers() never removes them.
+let emergencyMarkers = [];
 
 let trackingInterval = null;
 let currentUser = localStorage.getItem("user_id") || 'guest';
 let isTracking = false;
 let wasOutside = false;
 let isEmergencyActive = false;
+
+// Last known user position (set on each GPS tick)
+let lastUserLat = null;
+let lastUserLon = null;
 
 
 // ===============================
@@ -47,7 +68,7 @@ async function sendLocationToServer(latitude, longitude) {
         return;
     }
     try {
-        const response = await fetch(`https://track-me-backend-rzto.onrender.com/api/v1/locations/save`, {
+        const response = await fetch(`${BACKEND_URL}/locations/save`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -71,115 +92,161 @@ async function sendLocationToServer(latitude, longitude) {
 
 
 // ===============================
-// GET NEARBY PLACES (FIXED)
-// ===============================
-async function getNearbyPlaces(lat, lng) {
-
-    const radius = 15000;
-
-    const query = `
-    [out:json][timeout:25];
-    (
-      node["amenity"="hospital"](around:${radius},${lat},${lng});
-      node["amenity"="clinic"](around:${radius},${lat},${lng});
-      node["healthcare"="hospital"](around:${radius},${lat},${lng});
-      node["healthcare"="clinic"](around:${radius},${lat},${lng});
-      node["amenity"="police"](around:${radius},${lat},${lng});
-
-      way["amenity"="hospital"](around:${radius},${lat},${lng});
-      way["amenity"="clinic"](around:${radius},${lat},${lng});
-      way["healthcare"="hospital"](around:${radius},${lat},${lng});
-      way["healthcare"="clinic"](around:${radius},${lat},${lng});
-      way["amenity"="police"](around:${radius},${lat},${lng});
-    );
-    out body;
-    >;
-    out skel qt;
-    `;
-
-    try {
-        const res = await fetch("https://overpass-api.de/api/interpreter", {
-            method: "POST",
-            body: query
-        });
-
-        const data = await res.json();
-        console.log("Nearby API Response:", data);
-        return data.elements || [];
-
-    } catch (err) {
-        console.error("Nearby API error:", err);
-        return [];
-    }
-}
-
-
-// ===============================
-// DISTANCE CALCULATION
+// DISTANCE CALCULATION (Haversine) — returns km
 // ===============================
 function getDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
-
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(dLat/2)**2 +
-              Math.cos(lat1*Math.PI/180) *
-              Math.cos(lat2*Math.PI/180) *
-              Math.sin(dLon/2)**2;
-
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) *
+              Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 
 // ===============================
-// FIND NEAREST PLACE (FIXED)
+// GET NEAREST ENTRY from a list
+// Returns the single closest item to (userLat, userLon)
+// with an extra `.distKm` field attached.
 // ===============================
-function getNearestPlace(userLat, userLng, places, type) {
-
+function getNearestEntry(userLat, userLon, list) {
     let nearest = null;
     let minDist = Infinity;
 
-    places.forEach(p => {
-
-        if (!p.tags) return;
-
-        const lat = p.lat ?? (p.center && p.center.lat);
-        const lon = p.lon ?? (p.center && p.center.lon);
-
-        if (!lat || !lon) return;
-
-        const amenity = p.tags.amenity || "";
-        const healthcare = p.tags.healthcare || "";
-
-        const isHospital =
-            amenity === "hospital" ||
-            amenity === "clinic" ||
-            healthcare === "hospital" ||
-            healthcare === "clinic";
-
-        const isPolice = amenity === "police";
-
-        if (
-            (type === "hospital" && isHospital) ||
-            (type === "police" && isPolice)
-        ) {
-
-            const d = getDistance(userLat, userLng, lat, lon);
-
-            if (d < minDist) {
-                minDist = d;
-                nearest = {
-                    lat,
-                    lon,
-                    name: p.tags.name || (type === "hospital" ? "Hospital" : "Police Station")
-                };
-            }
+    list.forEach(entry => {
+        const d = getDistance(userLat, userLon, entry.lat, entry.lon);
+        if (d < minDist) {
+            minDist = d;
+            nearest = { ...entry, distKm: d };
         }
     });
 
-    console.log(`Nearest ${type}:`, nearest);
     return nearest;
+}
+
+
+// ===============================
+// BUILD POPUP HTML
+// Shows name, distance, coordinates, and a tap-to-call button.
+// ===============================
+function buildPopupHTML(entry, emoji, nameColor) {
+    const distText = entry.distKm < 1
+        ? `${(entry.distKm * 1000).toFixed(0)} m away`
+        : `${entry.distKm.toFixed(2)} km away`;
+
+    return `
+        <div style="font-family:sans-serif;min-width:180px;max-width:220px;">
+            <div style="font-size:15px;font-weight:bold;color:${nameColor};margin-bottom:4px;">
+                ${emoji} ${entry.name}
+            </div>
+            <div style="font-size:11px;color:#555;margin-bottom:2px;">
+                📍 ${entry.lat.toFixed(4)}° N, ${entry.lon.toFixed(4)}° E
+            </div>
+            <div style="font-size:12px;color:#374151;font-weight:600;margin-bottom:8px;">
+                🗺️ ${distText}
+            </div>
+            <a href="tel:${entry.ph}"
+               style="
+                display:block;
+                text-align:center;
+                background:#16a34a;
+                color:#fff;
+                font-size:13px;
+                font-weight:bold;
+                padding:6px 10px;
+                border-radius:8px;
+                text-decoration:none;
+                letter-spacing:0.02em;
+               ">
+               📞 Call ${entry.ph}
+            </a>
+        </div>
+    `;
+}
+
+
+// ===============================
+// SHOW EMERGENCY MARKERS
+// Only the NEAREST hospital and NEAREST police station are shown.
+// ===============================
+function showEmergencyMarkers() {
+    if (!window.trackingMap) return;
+
+    clearEmergencyMarkers();
+
+    // Need user position to rank distances
+    const userLat = lastUserLat;
+    const userLon = lastUserLon;
+
+    if (userLat === null || userLon === null) {
+        console.warn("User position not yet known — cannot rank emergency locations.");
+        return;
+    }
+
+    // --- Nearest hospital only ---
+    const nearestHospital = getNearestEntry(userLat, userLon, EMERGENCY_HOSPITALS);
+    if (nearestHospital) {
+        const icon = L.divIcon({
+            html: `<div style="font-size:32px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));">🏥</div>`,
+            className: '',
+            iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([nearestHospital.lat, nearestHospital.lon], { icon })
+            .addTo(window.trackingMap.map)
+            .bindPopup(
+                buildPopupHTML(nearestHospital, '🏥', '#dc2626'),
+                { autoClose: false, closeOnClick: false }
+            );
+
+        marker.openPopup();
+        emergencyMarkers.push(marker);
+    }
+
+    // --- Nearest police station only ---
+    const nearestPolice = getNearestEntry(userLat, userLon, EMERGENCY_POLICE_STATIONS);
+    if (nearestPolice) {
+        const icon = L.divIcon({
+            html: `<div style="font-size:32px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));">🚓</div>`,
+            className: '',
+            iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([nearestPolice.lat, nearestPolice.lon], { icon })
+            .addTo(window.trackingMap.map)
+            .bindPopup(
+                buildPopupHTML(nearestPolice, '🚓', '#1d4ed8'),
+                { autoClose: false, closeOnClick: false }
+            );
+
+        marker.openPopup();
+        emergencyMarkers.push(marker);
+    }
+
+    // Fit map to show user + both emergency markers together
+    if (emergencyMarkers.length > 0) {
+        const allMarkers = [...emergencyMarkers];
+        if (window.trackingMap.markers.length > 0) {
+            allMarkers.push(...window.trackingMap.markers);
+        }
+        const group = L.featureGroup(allMarkers);
+        window.trackingMap.map.fitBounds(group.getBounds().pad(0.25));
+    }
+
+    console.log(`Nearest hospital: ${nearestHospital?.name} (${nearestHospital?.distKm?.toFixed(2)} km)`);
+    console.log(`Nearest police:   ${nearestPolice?.name} (${nearestPolice?.distKm?.toFixed(2)} km)`);
+}
+
+
+// ===============================
+// CLEAR EMERGENCY MARKERS
+// ===============================
+function clearEmergencyMarkers() {
+    if (!window.trackingMap) return;
+    emergencyMarkers.forEach(m => window.trackingMap.map.removeLayer(m));
+    emergencyMarkers = [];
 }
 
 
@@ -187,7 +254,6 @@ function getNearestPlace(userLat, userLng, places, type) {
 // GEOFENCE CHECK
 // ===============================
 function checkGeofence(lat, lng) {
-
     if (typeof turf === "undefined") {
         console.error("Turf not loaded");
         return;
@@ -195,16 +261,12 @@ function checkGeofence(lat, lng) {
 
     if (!window.trackingMap || !window.trackingMap.geofence) return;
 
-    // Convert Leaflet LatLngs → Turf [lng, lat] format
     const geofenceLatLng = window.trackingMap.geofence.getLatLngs()[0];
     const geofenceLngLat = geofenceLatLng.map(p => [p.lng, p.lat]);
-
-    // Close polygon
     geofenceLngLat.push(geofenceLngLat[0]);
 
     const point = turf.point([lng, lat]);
     const polygon = turf.polygon([geofenceLngLat]);
-
     const isInside = turf.booleanPointInPolygon(point, polygon);
 
     if (isInside) {
@@ -212,7 +274,6 @@ function checkGeofence(lat, lng) {
         wasOutside = false;
     } else {
         updateStatus("🔴 Outside Geofence");
-
         if (!wasOutside) {
             alert("🚨 Boundary crossed!");
             wasOutside = true;
@@ -225,33 +286,31 @@ function checkGeofence(lat, lng) {
 // START TRACKING
 // ===============================
 function startTracking() {
-
     if (!navigator.geolocation) {
         alert("Geolocation not supported");
         return;
     }
 
-    // ✅ Read selected college and update geofence before tracking
     const selectedCollege = document.getElementById('collegeSelect')?.value || 'JGEC';
     if (window.trackingMap) {
         window.trackingMap.setGeofence(selectedCollege);
     }
 
-    // Lock the college selector while tracking
     const collegeSelect = document.getElementById('collegeSelect');
     if (collegeSelect) collegeSelect.disabled = true;
 
     updateStatus("Starting tracking...");
-
     isTracking = true;
     document.getElementById('startBtn').disabled = true;
     document.getElementById('stopBtn').disabled = false;
 
     navigator.geolocation.getCurrentPosition(
         async (position) => {
-
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
+
+            lastUserLat = lat;
+            lastUserLon = lng;
 
             updateCurrentLocation(lat, lng);
             await sendLocationToServer(lat, lng);
@@ -274,16 +333,18 @@ function startTracking() {
 // CONTINUOUS TRACKING
 // ===============================
 function startContinuousTracking() {
-
     if (trackingInterval) clearInterval(trackingInterval);
 
     trackingInterval = setInterval(() => {
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
-
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
+
+                // Always keep last known position up to date
+                lastUserLat = lat;
+                lastUserLon = lng;
 
                 updateCurrentLocation(lat, lng);
                 checkGeofence(lat, lng);
@@ -292,41 +353,14 @@ function startContinuousTracking() {
                 if (window.trackingMap) {
                     window.trackingMap.clearMarkers();
                     window.trackingMap.addMarker(lat, lng, "📍 You are here");
-                    window.trackingMap.setView(lat, lng, 16);
-                }
 
-                // 🚨 EMERGENCY MODE
-                if (isEmergencyActive) {
-
-                    updateStatus("🚨 Emergency Mode: Searching help...");
-
-                    const places = await getNearbyPlaces(lat, lng);
-
-                    const hospital = getNearestPlace(lat, lng, places, "hospital");
-                    const police = getNearestPlace(lat, lng, places, "police");
-
-                    if (!hospital && !police) {
-                        updateStatus("❌ No hospital or police found nearby!");
-                        return;
-                    }
-
-                    if (hospital) {
-                        window.trackingMap.addMarker(
-                            hospital.lat,
-                            hospital.lon,
-                            `🏥 ${hospital.name}`
-                        );
-                    }
-
-                    if (police) {
-                        window.trackingMap.addMarker(
-                            police.lat,
-                            police.lon,
-                            `🚓 ${police.name}`
-                        );
+                    if (isEmergencyActive) {
+                        // No auto-zoom — let user see hospital & police markers freely
+                        updateStatus("🚨 Emergency Mode Active — Help locations shown on map");
+                    } else {
+                        window.trackingMap.setView(lat, lng, 16);
                     }
                 }
-
             },
             (error) => console.error(error),
             { enableHighAccuracy: true }
@@ -342,7 +376,6 @@ function startContinuousTracking() {
 // STOP TRACKING
 // ===============================
 function stopTracking() {
-
     isTracking = false;
     isEmergencyActive = false;
 
@@ -350,34 +383,38 @@ function stopTracking() {
     document.getElementById('stopBtn').disabled = true;
     document.getElementById('stopEmergencyBtn').disabled = true;
 
-    // Re-enable college selector when tracking stops
     const collegeSelect = document.getElementById('collegeSelect');
     if (collegeSelect) collegeSelect.disabled = false;
 
     if (trackingInterval) clearInterval(trackingInterval);
 
+    clearEmergencyMarkers();
     updateStatus("Tracking stopped");
 }
 
 
 // ===============================
-// 🚨 EMERGENCY
+// 🚨 EMERGENCY — trigger
 // ===============================
 async function triggerEmergency() {
-
     navigator.geolocation.getCurrentPosition(async (position) => {
 
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
-        await sendLocationToServer(lat, lng);
+        lastUserLat = lat;
+        lastUserLon = lng;
 
-        alert("🚨 Emergency activated!");
-        updateStatus("🚨 Emergency mode ON");
+        await sendLocationToServer(lat, lng);
 
         isEmergencyActive = true;
         document.getElementById('stopEmergencyBtn').disabled = false;
 
+        // Show only nearest hospital + nearest police station
+        showEmergencyMarkers();
+
+        updateStatus("🚨 Emergency Mode Active — Nearest help shown on map");
+        alert("🚨 Emergency activated!\nNearest hospital and police station are now marked on the map.");
     });
 }
 
@@ -386,13 +423,13 @@ async function triggerEmergency() {
 // ⛔ STOP EMERGENCY
 // ===============================
 function stopEmergency() {
-
     if (!isEmergencyActive) {
         alert("No active emergency!");
         return;
     }
 
     isEmergencyActive = false;
+    clearEmergencyMarkers();
 
     updateStatus("🟢 Emergency stopped.");
     alert("Emergency mode deactivated!");
