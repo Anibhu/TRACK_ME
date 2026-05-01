@@ -12,6 +12,88 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
+<style>
+  /* ===============================
+     COLLEGE SELECTOR STYLES
+  ================================ */
+  .college-selector-wrapper {
+    margin: 1rem 0;
+    padding: 1rem 1.2rem;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .college-selector-wrapper label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #94a3b8;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .college-btn-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .college-btn {
+    padding: 0.45rem 1.1rem;
+    border-radius: 8px;
+    border: 2px solid #334155;
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.03em;
+  }
+
+  .college-btn:hover {
+    border-color: #60a5fa;
+    color: #60a5fa;
+    background: #1e3a5f;
+  }
+
+  .college-btn.active {
+    background: #2563eb;
+    border-color: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+  }
+
+  .college-btn.active:hover {
+    background: #1d4ed8;
+  }
+
+  /* Hidden native select - used as the actual value store */
+  #collegeSelect {
+    display: none;
+  }
+
+  .college-badge {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .college-badge span {
+    color: #3b82f6;
+    font-weight: 700;
+  }
+</style>
+
 </head>
 
 <body>
@@ -50,6 +132,7 @@
     </div>
   </div>
 </div>
+
 <div class="container" id="app" style="display:none;">
     <div class="container">
 
@@ -57,48 +140,83 @@
     <button class="btn btn-danger" onclick="logout()" style="background-color: #ef4444; color: white; padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer;">
       <i class="fas fa-sign-out-alt"></i> Logout
     </button>
+
     <div class="user-section">
 
-    <label for="userId">
-    <i class="fa fa-user"></i> User ID:
-    </label>
+      <label for="userId">
+        <i class="fa fa-user"></i> User ID:
+      </label>
 
-    <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
+      <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
 
-    <button onclick="updateUserId()">
-    <i class="fa fa-sync"></i> Update User
-    </button>
+      <button onclick="updateUserId()">
+        <i class="fa fa-sync"></i> Update User
+      </button>
 
     </div>
 
+    <!-- ===============================
+         COLLEGE SELECTOR
+    ================================ -->
+    <div class="college-selector-wrapper">
+      <label>
+        <i class="fas fa-university"></i> Select Campus:
+      </label>
+
+      <!-- Hidden select holds the actual value read by tracking.js -->
+      <select id="collegeSelect">
+        <option value="JGEC">JGEC</option>
+        <option value="CGEC">CGEC</option>
+      </select>
+
+      <!-- Visual toggle buttons -->
+      <div class="college-btn-group">
+        <button
+          class="college-btn active"
+          id="btn-JGEC"
+          onclick="selectCollege('JGEC')"
+          title="Jalpaiguri Government Engineering College">
+          🏛️ JGEC
+        </button>
+        <button
+          class="college-btn"
+          id="btn-CGEC"
+          onclick="selectCollege('CGEC')"
+          title="Cooch Behar Government Engineering College">
+          🏛️ CGEC
+        </button>
+      </div>
+
+      <div class="college-badge">
+        <i class="fas fa-location-dot"></i> Geofence: <span id="activeCampusLabel">JGEC</span>
+      </div>
+    </div>
 
     <div class="status">
 
-    <p id="status">
-    <i class="fa fa-info-circle"></i> Ready to track location...
-    </p>
+      <p id="status">
+        <i class="fa fa-info-circle"></i> Ready to track location...
+      </p>
 
-    <p id="currentLocation">
-    <i class="fa fa-map-marker-alt"></i> No location data yet
-    </p>
+      <p id="currentLocation">
+        <i class="fa fa-map-marker-alt"></i> No location data yet
+      </p>
 
     </div>
 
-
     <!-- ===============================
-        CONTROLS SECTION
+         CONTROLS SECTION
     ================================ -->
     <div class="controls">
 
         <button onclick="startTracking()" id="startBtn">
             <i class="fa fa-play"></i> Start Tracking
         </button>
-        
+
         <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
             <i class="fa fa-exclamation-triangle"></i> EMERGENCY
         </button>
 
-        <!-- 🔥 NEW STOP EMERGENCY BUTTON -->
         <button onclick="stopEmergency()" id="stopEmergencyBtn" disabled style="background-color:#6b7280;">
             <i class="fa fa-ban"></i> Stop Emergency
         </button>
@@ -109,23 +227,21 @@
 
     </div>
 
-
     <div class="navigation">
 
-    <a href="view_path.html" class="nav-link">
-    <i class="fa fa-route"></i> View User Paths →
-    </a>
+      <a href="view_path.html" class="nav-link">
+        <i class="fa fa-route"></i> View User Paths →
+      </a>
 
     </div>
 
-
     <div class="map-container">
 
-    <div id="map"></div>
+      <div id="map"></div>
 
-    <button class="fullscreen-btn" onclick="toggleFullscreenMap()">
-    ⛶
-    </button>
+      <button class="fullscreen-btn" onclick="toggleFullscreenMap()">
+        ⛶
+      </button>
 
     </div>
 
@@ -138,6 +254,26 @@
 <script src="js/map.js"></script>
 <script src="js/tracking.js"></script>
 <script>
+// ===============================
+// COLLEGE SELECTOR LOGIC
+// ===============================
+function selectCollege(college) {
+    // Update hidden select value
+    document.getElementById('collegeSelect').value = college;
+
+    // Update button styles
+    document.querySelectorAll('.college-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('btn-' + college).classList.add('active');
+
+    // Update badge label
+    document.getElementById('activeCampusLabel').textContent = college;
+
+    // Instantly update the geofence on the map
+    if (window.trackingMap) {
+        window.trackingMap.setGeofence(college);
+    }
+}
+
 // --- CONFIGURATION ---
 const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 let idleTimer;
@@ -147,11 +283,11 @@ window.onload = () => {
     const session = localStorage.getItem("supabase_session");
     if (session) {
         showApp();
-        resetIdleTimer(); 
+        resetIdleTimer();
     }
 };
 
-// --- 2. SIGNUP FUNCTION (Added this back for you) ---
+// --- 2. SIGNUP FUNCTION ---
 async function signup() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -171,10 +307,9 @@ async function signup() {
         const data = await res.json();
 
         if (data.status === "success") {
-            // Log them in immediately after signup
             localStorage.setItem("supabase_session", JSON.stringify(data.session));
             localStorage.setItem("user_id", data.user.id);
-            
+
             alert("Account created successfully!");
             showApp();
             resetIdleTimer();
@@ -203,7 +338,7 @@ async function login() {
         if (data.status === "success") {
             localStorage.setItem("supabase_session", JSON.stringify(data.session));
             localStorage.setItem("user_id", data.user.id);
-            
+
             showApp();
             resetIdleTimer();
         } else {
@@ -217,7 +352,7 @@ async function login() {
 function logout() {
     localStorage.removeItem("supabase_session");
     localStorage.removeItem("user_id");
-    location.reload(); 
+    location.reload();
 }
 
 // --- 4. UI TOGGLE ---
@@ -227,12 +362,11 @@ function showApp() {
     if (!window.trackingMap) {
         window.trackingMap = new MapManager('map');
     } else {
-        window.trackingMap.map.invalidateSize(); // force Leaflet to recalculate
+        window.trackingMap.map.invalidateSize();
     }
     const savedId = localStorage.getItem("user_id");
-    if(savedId) {
+    if (savedId) {
         document.getElementById("userId").value = savedId;
-        // Also update the global variable used in tracking.js if it exists
         if (typeof currentUser !== 'undefined') currentUser = savedId;
     }
 }
@@ -242,14 +376,13 @@ function resetIdleTimer() {
     if (!localStorage.getItem("supabase_session")) return;
 
     clearTimeout(idleTimer);
-    
+
     idleTimer = setTimeout(() => {
         alert("You have been logged out due to 5 minutes of inactivity.");
         logout();
     }, INACTIVITY_LIMIT);
 }
 
-// Listen for activity
 window.onmousemove = resetIdleTimer;
 window.onmousedown = resetIdleTimer;
 window.ontouchstart = resetIdleTimer;
