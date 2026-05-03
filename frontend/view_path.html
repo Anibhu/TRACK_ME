@@ -7,153 +7,220 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="css/view_path.css">
+    <style>
+        @keyframes emergencyPulse {
+            0%   { box-shadow: 0 0 0 0 rgba(239,71,111,0.7), 0 2px 10px rgba(0,0,0,0.3); }
+            70%  { box-shadow: 0 0 0 14px rgba(239,71,111,0), 0 2px 10px rgba(0,0,0,0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(239,71,111,0), 0 2px 10px rgba(0,0,0,0.3); }
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0);    opacity: 1; }
+            to   { transform: translateX(100%); opacity: 0; }
+        }
+
+        .emergency-dot {
+            width: 26px;
+            height: 26px;
+            background: #ef476f;
+            border-radius: 50%;
+            border: 3px solid white;
+            animation: emergencyPulse 1.4s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .custom-marker-start,
+        .custom-marker-end,
+        .emergency-marker-icon { background: transparent; border: none; }
+
+        .stat-card.emergency { border-top: 3px solid #ef476f; }
+        .stat-card.emergency .stat-icon { color: #ef476f; }
+
+        .map-legend {
+            display: none;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 10px;
+            font-size: 13px;
+            padding: 8px 14px;
+            background: var(--card-bg, #fff);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .legend-dot {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 1px 4px rgba(0,0,0,.2);
+            display: inline-block;
+        }
+        .legend-emergency {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            border: 2px solid white;
+            background: #ef476f;
+            box-shadow: 0 0 0 3px rgba(239,71,111,.35);
+            display: inline-block;
+        }
+        .timeline-badge { border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+        .emergency-badge {
+            background: rgba(239,71,111,0.13) !important;
+            color: #ef476f !important;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>
-                <i class="fas fa-route"></i>
-                Path Explorer
-            </h1>
-            <p>Visualize and analyze user movement paths with interactive maps and detailed statistics</p>
-        </div>
-
-        <!-- Main Content -->
-        <div class="content">
-            <!-- User Selection Card -->
-            <div class="selection-card">
-                <div class="input-group">
-                    <label for="userSelect">
-                        <i class="fas fa-user"></i>
-                        Select User
-                    </label>
-                    <div class="custom-select">
-                        <select id="userSelect" title="Select User" aria-label="Select User">
-                            <option value="">-- Choose a user --</option>
-                        </select>
-                    </div>
-                </div>
-                <button onclick="loadPath()" id="loadBtn" class="load-btn">
-                    <i class="fas fa-map-marked-alt"></i>
-                    <span>Load Journey</span>
-                </button>
-                <button onclick="resetData()" id="resetBtn" class="load-btn" style="background-color: #ef476f; margin-top: 10px;">
-                    <i class="fas fa-trash-alt"></i>
-                    <span>Reset All Data</span>
-                </button>
-            </div>
-            
-            <!-- Navigation -->
-            <div class="navigation">
-                <a href="index.html" class="nav-link">
-                    <i class="fas fa-arrow-left"></i>
-                    Back to Live Tracking
-                </a>
-            </div>
-            <!-- Stats Grid (initially hidden) -->
-            <div class="stats-grid" id="statsGrid" style="display: none;">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-map-pin"></i>
-                    </div>
-                    <div class="stat-label">Total Points</div>
-                    <div class="stat-value" id="totalPoints">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-road"></i>
-                    </div>
-                    <div class="stat-label">Distance</div>
-                    <div class="stat-value">
-                        <span id="totalDistance">0</span>
-                        <span class="stat-unit">km</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-label">Duration</div>
-                    <div class="stat-value">
-                        <span id="totalDuration">0</span>
-                        <span class="stat-unit">min</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-stopwatch"></i>
-                    </div>
-                    <div class="stat-label">Avg. Speed</div>
-                    <div class="stat-value">
-                        <span id="avgSpeed">0</span>
-                        <span class="stat-unit">km/h</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Map Container -->
-            <div class="map-wrapper">
-                <div id="map">
-                    <button class="fullscreen-btn" onclick="toggleFullscreenMap()">⛶</button>
-                    <div style="text-align: center; padding: 200px 20px; color: var(--gray);">
-                        <i class="fas fa-map" style="font-size: 48px; margin-bottom: 20px;"></i>
-                        <p>Loading map...</p>
-                    </div>
-                </div>
-                <div class="map-overlay" id="mapOverlay" style="display: none;">
-                    <i class="fas fa-circle" style="color: var(--primary);"></i>
-                    <span id="routeInfo"></span>
-                </div>
-            </div>
-
-            <!-- Timeline Section (initially hidden) -->
-            <div class="timeline-section" id="timelineSection" style="display: none;">
-                <div class="timeline-title">
-                    <i class="fas fa-history"></i>
-                    <h3>Journey Timeline</h3>
-                </div>
-                <div class="timeline" id="timeline">
-                    <!-- Timeline items will be added here -->
-                </div>
-            </div>
-
-            <!-- Empty State (shown when no data) -->
-            <div class="empty-state" id="emptyState">
-                <i class="fas fa-map-marked-alt"></i>
-                <h3>No Path Selected</h3>
-                <p>Select a user and click "Load Journey" to visualize their path</p>
-            </div>
-        </div>
+    <div class="header">
+        <h1><i class="fas fa-route"></i> Path Explorer</h1>
+        <p>Visualize and analyze user movement paths with interactive maps and detailed statistics</p>
     </div>
 
-    
+    <div class="content">
+        <!-- User Selection -->
+        <div class="selection-card">
+            <div class="input-group">
+                <label for="userSelect"><i class="fas fa-user"></i> Select User</label>
+                <div class="custom-select">
+                    <select id="userSelect" title="Select User" aria-label="Select User">
+                        <option value="">-- Choose a user --</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="loadPath()" id="loadBtn" class="load-btn">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Load Journey</span>
+            </button>
+            <button onclick="resetData()" id="resetBtn" class="load-btn" style="background-color:#ef476f;margin-top:10px;">
+                <i class="fas fa-trash-alt"></i>
+                <span>Reset All Data</span>
+            </button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <a href="index.html" class="nav-link">
+                <i class="fas fa-arrow-left"></i> Back to Live Tracking
+            </a>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="statsGrid" style="display:none;">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-map-pin"></i></div>
+                <div class="stat-label">Total Points</div>
+                <div class="stat-value" id="totalPoints">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-road"></i></div>
+                <div class="stat-label">Distance</div>
+                <div class="stat-value">
+                    <span id="totalDistance">0</span><span class="stat-unit">km</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-label">Duration</div>
+                <div class="stat-value">
+                    <span id="totalDuration">0</span><span class="stat-unit">min</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-stopwatch"></i></div>
+                <div class="stat-label">Avg. Speed</div>
+                <div class="stat-value">
+                    <span id="avgSpeed">0</span><span class="stat-unit">km/h</span>
+                </div>
+            </div>
+            <!-- Emergency count -->
+            <div class="stat-card emergency">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-label">Emergencies</div>
+                <div class="stat-value" id="emergencyCount">0</div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="map-wrapper">
+            <div id="map">
+                <button class="fullscreen-btn" onclick="toggleFullscreenMap()">⛶</button>
+                <div style="text-align:center;padding:200px 20px;color:var(--gray);">
+                    <i class="fas fa-map" style="font-size:48px;margin-bottom:20px;"></i>
+                    <p>Loading map...</p>
+                </div>
+            </div>
+            <div class="map-overlay" id="mapOverlay" style="display:none;">
+                <i class="fas fa-circle" style="color:var(--primary);"></i>
+                <span id="routeInfo"></span>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="map-legend" id="mapLegend">
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+                <span class="legend-dot" style="background:#06d6a0;"></span> Start
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+                <span class="legend-dot" style="background:#ef476f;"></span> End
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+                <span class="legend-emergency"></span> Emergency ⚠️
+            </span>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline-section" id="timelineSection" style="display:none;">
+            <div class="timeline-title">
+                <i class="fas fa-history"></i>
+                <h3>Journey Timeline</h3>
+            </div>
+            <div class="timeline" id="timeline"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+            <i class="fas fa-map-marked-alt"></i>
+            <h3>No Path Selected</h3>
+            <p>Select a user and click "Load Journey" to visualize their path</p>
+        </div>
+    </div>
+</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 // const BACKEND_URL = 'http://localhost:8000/api/v1';
 const BACKEND_URL = 'https://track-me-backend-rzto.onrender.com/api/v1';
 
-let map = null;
-let polylineLayer = null;
-let startMarker = null;
-let endMarker = null;
-let waypointMarkers = [];
+let map              = null;
+let polylineLayer    = null;
+let startMarker      = null;
+let endMarker        = null;
+let waypointMarkers  = [];
+let emergencyMarkers = [];
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if user is logged in
     const session = localStorage.getItem("supabase_session");
     if (!session) {
         alert("Please login first.");
         window.location.href = "index.html";
         return;
     }
-
     initMap();
     loadUsers();
 });
+
 function initMap() {
     map = L.map('map').setView([22.58, 88.44], 13);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19
@@ -162,398 +229,307 @@ function initMap() {
 
 async function loadUsers() {
     try {
-        const response = await fetch(`${BACKEND_URL}/users/`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const users = await response.json();
+        const res = await fetch(`${BACKEND_URL}/users/`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const users = await res.json();
         const select = document.getElementById('userSelect');
-
         select.innerHTML = '<option value="">-- Choose User --</option>';
-
-        users.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user;
-            option.textContent = user;
-            select.appendChild(option);
+        users.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u; opt.textContent = u;
+            select.appendChild(opt);
         });
-
-        // --- ADD THIS PART ---
-        const savedUserId = localStorage.getItem("user_id");
-        if (savedUserId) {
-            select.value = savedUserId; // Automatically select the logged-in user
-            loadPath(); // Optional: Automatically load their path immediately
-        }
-        // ---------------------
-
-        if (users.length > 0) {
-            showEmptyState(`Found ${users.length} users.`, 'info');
-        } else {
-            showEmptyState('No users found.', 'warning');
-        }
-
-    } catch (error) {
-        console.error('Error loading users:', error);
-        showEmptyState('Error loading users: ' + error.message, 'error');
+        const saved = localStorage.getItem("user_id");
+        if (saved) { select.value = saved; loadPath(); }
+        showEmptyState(users.length > 0 ? `Found ${users.length} users.` : 'No users found.',
+                       users.length > 0 ? 'info' : 'warning');
+    } catch (err) {
+        showEmptyState('Error loading users: ' + err.message, 'error');
     }
 }
 
 async function loadPath() {
-    const user = document.getElementById('userSelect').value;
+    const user    = document.getElementById('userSelect').value;
     const loadBtn = document.getElementById('loadBtn');
-
-    if (!user) {
-        showNotification('Please select a user first', 'warning');
-        return;
-    }
+    if (!user) { showNotification('Please select a user first', 'warning'); return; }
 
     try {
-        // Show loading state
         loadBtn.disabled = true;
         loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-        
-        // Hide all sections while loading
-        document.getElementById('emptyState').style.display = 'none';
-        document.getElementById('statsGrid').style.display = 'none';
-        document.getElementById('timelineSection').style.display = 'none';
-        document.getElementById('mapOverlay').style.display = 'none';
+        ['emptyState','statsGrid','timelineSection','mapOverlay','mapLegend'].forEach(hide);
 
-        const response = await fetch(`${BACKEND_URL}/locations/path/${user}`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const data = await response.json();
+        const res = await fetch(`${BACKEND_URL}/locations/path/${user}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
 
         if (!data || data.length === 0) {
             showEmptyState(`No location data found for ${user}. Start tracking first!`, 'info');
             return;
         }
 
-        // Clear previous map layers
+        // ─────────────────────────────────────────────────────────────────
+        // THE FIX: emergency rows are already in this array,
+        // identified by   is_emergency === true
+        // Split them out so we can render them differently on the map.
+        // ─────────────────────────────────────────────────────────────────
+        const normalPoints    = data.filter(p => !p.is_emergency);
+        const emergencyPoints = data.filter(p =>  p.is_emergency);
+
+        console.log(`[Path] total=${data.length}  normal=${normalPoints.length}  emergency=${emergencyPoints.length}`);
+        // Log raw sample so you can verify field names
+        if (data.length) console.log('[Path] sample point:', data[0]);
+
         clearMap();
+        // Use all points for the path line; only draw emergency pins separately
+        displayPath(data, emergencyPoints);
 
-        // Process and display the path
-        displayPath(data);
-
-    } catch (error) {
-        console.error('Error loading path:', error);
-        showEmptyState('Error loading path: ' + error.message, 'error');
-        showNotification('Failed to load path: ' + error.message, 'error');
+    } catch (err) {
+        showEmptyState('Error loading path: ' + err.message, 'error');
+        showNotification('Failed to load path: ' + err.message, 'error');
     } finally {
-        // Reset button
         loadBtn.disabled = false;
         loadBtn.innerHTML = '<i class="fas fa-map-marked-alt"></i> Load Journey';
     }
 }
 
-function displayPath(data) {
-    // Create path points
-    const latlngs = data.map(p => [p.lat, p.lng]);
+// lat/lng helper — handles both {lat,lng} and {latitude,longitude}
+function getLat(p) { return p.lat ?? p.latitude; }
+function getLng(p) { return p.lng ?? p.longitude; }
 
-    // Draw the path
+function displayPath(data, emergencyPoints = []) {
+    const latlngs = data.map(p => [getLat(p), getLng(p)]);
+
     polylineLayer = L.polyline(latlngs, {
-        color: '#4361ee',
-        weight: 6,
-        opacity: 0.8,
-        lineCap: 'round',
-        lineJoin: 'round'
+        color: '#4361ee', weight: 6, opacity: 0.8,
+        lineCap: 'round', lineJoin: 'round'
     }).addTo(map);
 
-    // Add start marker
-    startMarker = L.marker(latlngs[0], {
+    // Start marker
+    const f = data[0];
+    startMarker = L.marker([getLat(f), getLng(f)], {
         icon: L.divIcon({
             className: 'custom-marker-start',
-            html: '<div style="background: #06d6a0; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>',
-            iconSize: [20, 20],
-            popupAnchor: [0, -10]
+            html: '<div style="background:#06d6a0;width:22px;height:22px;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.3);"></div>',
+            iconSize: [22, 22], popupAnchor: [0, -11]
         })
-    }).addTo(map)
-      .bindPopup(`
+    }).addTo(map).bindPopup(`
         <b>🏁 Start Point</b><br>
-        ${data[0].timestamp ? new Date(data[0].timestamp).toLocaleString() : 'No timestamp'}<br>
-        Lat: ${data[0].lat.toFixed(6)}<br>
-        Lng: ${data[0].lng.toFixed(6)}
-      `);
+        ${f.timestamp ? new Date(f.timestamp).toLocaleString() : 'No timestamp'}<br>
+        Lat: ${parseFloat(getLat(f)).toFixed(6)}, Lng: ${parseFloat(getLng(f)).toFixed(6)}
+    `);
 
-    // Add end marker
-    endMarker = L.marker(latlngs[latlngs.length - 1], {
+    // End marker
+    const l = data[data.length - 1];
+    endMarker = L.marker([getLat(l), getLng(l)], {
         icon: L.divIcon({
             className: 'custom-marker-end',
-            html: '<div style="background: #ef476f; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>',
-            iconSize: [20, 20],
-            popupAnchor: [0, -10]
+            html: '<div style="background:#ef476f;width:22px;height:22px;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.3);"></div>',
+            iconSize: [22, 22], popupAnchor: [0, -11]
         })
-    }).addTo(map)
-      .bindPopup(`
+    }).addTo(map).bindPopup(`
         <b>🏁 End Point</b><br>
-        ${data[data.length - 1].timestamp ? new Date(data[data.length - 1].timestamp).toLocaleString() : 'No timestamp'}<br>
-        Lat: ${data[data.length - 1].lat.toFixed(6)}<br>
-        Lng: ${data[data.length - 1].lng.toFixed(6)}
-      `);
+        ${l.timestamp ? new Date(l.timestamp).toLocaleString() : 'No timestamp'}<br>
+        Lat: ${parseFloat(getLat(l)).toFixed(6)}, Lng: ${parseFloat(getLng(l)).toFixed(6)}
+    `);
 
-    // Fit map to show entire path
+    // ── Emergency markers ─────────────────────────────────────────────────
+    emergencyMarkers.forEach(m => map.removeLayer(m));
+    emergencyMarkers = [];
+
+    emergencyPoints.forEach((e, idx) => {
+        const eLat = getLat(e);
+        const eLng = getLng(e);
+        if (eLat == null || eLng == null) return;
+
+        const timeStr = e.timestamp ? new Date(e.timestamp).toLocaleString() : 'N/A';
+
+        const marker = L.marker([eLat, eLng], {
+            icon: L.divIcon({
+                className: 'emergency-marker-icon',
+                html: `<div class="emergency-dot" title="Emergency #${idx + 1}">!</div>`,
+                iconSize: [26, 26],
+                popupAnchor: [0, -16]
+            }),
+            zIndexOffset: 1000
+        }).addTo(map).bindPopup(`
+            <div style="font-family:sans-serif;min-width:175px;">
+                <div style="color:#ef476f;font-weight:bold;font-size:14px;margin-bottom:6px;">
+                    ⚠️ Emergency #${idx + 1}
+                </div>
+                <div style="font-size:12px;color:#374151;line-height:1.6;">
+                    <b>Time:</b> ${timeStr}<br>
+                    <b>Lat:</b> ${parseFloat(eLat).toFixed(6)}<br>
+                    <b>Lng:</b> ${parseFloat(eLng).toFixed(6)}
+                </div>
+            </div>
+        `);
+
+        emergencyMarkers.push(marker);
+    });
+    // ──────────────────────────────────────────────────────────────────────
+
     map.fitBounds(polylineLayer.getBounds(), { padding: [50, 50] });
 
-    // Calculate and display statistics
-    calculateAndDisplayStats(data, latlngs);
+    calculateStats(data, latlngs, emergencyPoints.length);
+    displayTimeline(data, emergencyPoints);
 
-    // Display timeline
-    displayTimeline(data);
+    showEl('statsGrid',       'grid');
+    showEl('timelineSection', 'block');
+    showEl('mapOverlay',      'flex');
+    showEl('mapLegend',       'flex');
+    hide('emptyState');
 
-    // Show UI elements
-    document.getElementById('statsGrid').style.display = 'grid';
-    document.getElementById('timelineSection').style.display = 'block';
-    document.getElementById('mapOverlay').style.display = 'flex';
-    document.getElementById('emptyState').style.display = 'none';
-
-    // Update overlay info
+    const user = document.getElementById('userSelect').value;
     document.getElementById('routeInfo').innerHTML = `
-        <strong>${document.getElementById('userSelect').value}</strong> • 
-        ${data.length} points
+        <strong>${user}</strong> • ${data.length} points
+        ${emergencyPoints.length > 0
+            ? ` • <span style="color:#ef476f;font-weight:bold;">⚠️ ${emergencyPoints.length} emergency${emergencyPoints.length > 1 ? 's' : ''}</span>`
+            : ''}
     `;
 
-    // Show success notification
-    showNotification(`Path loaded for ${document.getElementById('userSelect').value}`, 'success');
+    showNotification(
+        emergencyPoints.length > 0
+            ? `⚠️ ${emergencyPoints.length} emergency point${emergencyPoints.length > 1 ? 's' : ''} shown on map!`
+            : `Path loaded for ${user}`,
+        emergencyPoints.length > 0 ? 'error' : 'success'
+    );
 }
 
-function calculateAndDisplayStats(data, latlngs) {
-    // Calculate total distance
-    let totalDistance = 0;
+function calculateStats(data, latlngs, emergencyCount = 0) {
+    let dist = 0;
     for (let i = 1; i < latlngs.length; i++) {
-        totalDistance += calculateDistance(
-            latlngs[i - 1][0], latlngs[i - 1][1],
-            latlngs[i][0], latlngs[i][1]
-        );
+        dist += haversine(latlngs[i-1][0], latlngs[i-1][1], latlngs[i][0], latlngs[i][1]);
     }
-
-    // Calculate duration
     let startTime, endTime;
-    if (data[0].timestamp && data[data.length - 1].timestamp) {
+    if (data[0].timestamp && data[data.length-1].timestamp) {
         startTime = new Date(data[0].timestamp);
-        endTime = new Date(data[data.length - 1].timestamp);
+        endTime   = new Date(data[data.length-1].timestamp);
     } else {
-        // If no timestamps, use estimated times
-        startTime = new Date(Date.now() - (data.length * 5 * 60 * 1000));
-        endTime = new Date();
+        startTime = new Date(Date.now() - data.length * 5 * 60 * 1000);
+        endTime   = new Date();
     }
-    
-    const durationMinutes = Math.round((endTime - startTime) / 1000 / 60);
-    
-    // Calculate average speed
-    const durationHours = durationMinutes / 60;
-    const avgSpeed = durationHours > 0 ? (totalDistance / durationHours).toFixed(1) : 0;
-
-    // Update stats grid
-    document.getElementById('totalPoints').textContent = data.length;
-    document.getElementById('totalDistance').textContent = totalDistance.toFixed(2);
-    document.getElementById('totalDuration').textContent = durationMinutes;
-    document.getElementById('avgSpeed').textContent = avgSpeed;
+    const mins  = Math.round((endTime - startTime) / 60000);
+    const hours = mins / 60;
+    document.getElementById('totalPoints').textContent    = data.length;
+    document.getElementById('totalDistance').textContent  = dist.toFixed(2);
+    document.getElementById('totalDuration').textContent  = mins;
+    document.getElementById('avgSpeed').textContent       = hours > 0 ? (dist / hours).toFixed(1) : 0;
+    document.getElementById('emergencyCount').textContent = emergencyCount;
 }
 
-function displayTimeline(data) {
+function displayTimeline(data, emergencyPoints = []) {
     const timeline = document.getElementById('timeline');
     timeline.innerHTML = '';
 
-    // Show last 10 points (or all if less)
-    const pointsToShow = Math.min(data.length, 10);
-    const startIndex = Math.max(0, data.length - pointsToShow);
+    const total    = data.length;
+    const startIdx = Math.max(0, total - 10);
 
-    for (let i = startIndex; i < data.length; i++) {
+    for (let i = startIdx; i < total; i++) {
         const point = data[i];
-        const time = point.timestamp ? new Date(point.timestamp).toLocaleTimeString() : 'N/A';
+        const pLat  = getLat(point);
+        const pLng  = getLng(point);
+        const time  = point.timestamp ? new Date(point.timestamp).toLocaleTimeString() : 'N/A';
+
+        // Use the flag directly — most reliable
+        const isEmergency = !!point.is_emergency;
 
         const item = document.createElement('div');
         item.className = 'timeline-item';
+        if (isEmergency) item.style.background = 'rgba(239,71,111,0.06)';
 
         let badge = '';
-        if (i === 0) {
-            badge = '<span class="timeline-badge" style="background: rgba(6, 214, 160, 0.1); color: #06d6a0;">Start</span>';
-        } else if (i === data.length - 1) {
-            badge = '<span class="timeline-badge" style="background: rgba(239, 71, 111, 0.1); color: #ef476f;">End</span>';
-        }
+        if (i === 0)        badge += '<span class="timeline-badge" style="background:rgba(6,214,160,0.1);color:#06d6a0;">Start</span>';
+        if (i === total-1)  badge += '<span class="timeline-badge" style="background:rgba(239,71,111,0.1);color:#ef476f;">End</span>';
+        if (isEmergency)    badge += '<span class="timeline-badge emergency-badge">⚠️ Emergency</span>';
 
         item.innerHTML = `
             <div class="timeline-time">${time}</div>
-            <div class="timeline-dot"></div>
+            <div class="timeline-dot" style="${isEmergency ? 'background:#ef476f;' : ''}"></div>
             <div class="timeline-content">
-                <span class="timeline-coords">${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}</span>
+                <span class="timeline-coords">${parseFloat(pLat).toFixed(6)}, ${parseFloat(pLng).toFixed(6)}</span>
                 ${badge}
             </div>
         `;
-
         timeline.appendChild(item);
     }
 }
 
 function clearMap() {
     if (polylineLayer) map.removeLayer(polylineLayer);
-    if (startMarker) map.removeLayer(startMarker);
-    if (endMarker) map.removeLayer(endMarker);
-    
-    // Clear waypoint markers if any
-    waypointMarkers.forEach(marker => {
-        if (map) map.removeLayer(marker);
-    });
-    waypointMarkers = [];
+    if (startMarker)   map.removeLayer(startMarker);
+    if (endMarker)     map.removeLayer(endMarker);
+    waypointMarkers.forEach(m  => map.removeLayer(m)); waypointMarkers  = [];
+    emergencyMarkers.forEach(m => map.removeLayer(m)); emergencyMarkers = [];
 }
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Earth's radius in km
+function haversine(lat1, lon1, lat2, lon2) {
+    const R    = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) *
-        Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) ** 2;
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    const a    = Math.sin(dLat/2)**2 +
+                 Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+                 Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function hide(id)               { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+function showEl(id, d = 'block'){ const el = document.getElementById(id); if (el) el.style.display = d;    }
+
 function showEmptyState(message, type = 'info') {
-    const emptyState = document.getElementById('emptyState');
-    emptyState.style.display = 'block';
-    
-    // Set icon based on type
-    let icon = 'fa-map-marked-alt';
-    if (type === 'error') icon = 'fa-exclamation-circle';
-    if (type === 'warning') icon = 'fa-exclamation-triangle';
-    if (type === 'success') icon = 'fa-check-circle';
-    
-    emptyState.innerHTML = `
-        <i class="fas ${icon}" style="color: ${type === 'error' ? '#ef476f' : type === 'warning' ? '#ffd166' : '#4361ee'};"></i>
-        <h3>${type === 'error' ? 'Error' : type === 'warning' ? 'Warning' : 'No Data'}</h3>
+    const icons  = { error:'fa-exclamation-circle', warning:'fa-exclamation-triangle', success:'fa-check-circle', info:'fa-map-marked-alt' };
+    const colors = { error:'#ef476f', warning:'#ffd166', success:'#06d6a0', info:'#4361ee' };
+    const labels = { error:'Error', warning:'Warning', success:'Done', info:'No Data' };
+    showEl('emptyState');
+    document.getElementById('emptyState').innerHTML = `
+        <i class="fas ${icons[type]||icons.info}" style="color:${colors[type]};"></i>
+        <h3>${labels[type]||'Info'}</h3>
         <p>${message}</p>
     `;
-    
-    // Hide other sections
-    document.getElementById('statsGrid').style.display = 'none';
-    document.getElementById('timelineSection').style.display = 'none';
-    document.getElementById('mapOverlay').style.display = 'none';
+    ['statsGrid','timelineSection','mapOverlay','mapLegend'].forEach(hide);
 }
 
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = 'notification';
-    
-    const colors = {
-        success: '#06d6a0',
-        error: '#ef476f',
-        warning: '#ffd166',
-        info: '#4361ee'
-    };
-    
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 25px;
-        border-radius: 10px;
-        background: ${colors[type]};
-        color: white;
-        font-weight: 600;
-        z-index: 9999;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        animation: slideIn 0.3s ease;
-    `;
-    
-    notification.innerHTML = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    const colors = { success:'#06d6a0', error:'#ef476f', warning:'#ffd166', info:'#4361ee' };
+    const n = document.createElement('div');
+    n.style.cssText = `position:fixed;top:20px;right:20px;padding:15px 25px;border-radius:10px;
+        background:${colors[type]};color:white;font-weight:600;z-index:9999;
+        box-shadow:0 10px 30px rgba(0,0,0,0.2);animation:slideIn 0.3s ease;max-width:320px;`;
+    n.innerHTML = message;
+    document.body.appendChild(n);
+    setTimeout(() => { n.style.animation = 'slideOut 0.3s ease'; setTimeout(() => n.remove(), 300); }, 3500);
 }
-
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-    
-    .custom-marker-start, .custom-marker-end {
-        background: transparent;
-        border: none;
-    }
-`;
-document.head.appendChild(style);
 
 function toggleFullscreenMap() {
-    const mapContainer = document.querySelector('.map-wrapper');
-
+    const w = document.querySelector('.map-wrapper');
     if (!document.fullscreenElement) {
-        mapContainer.requestFullscreen().then(() => {
-            setTimeout(() => {
-                if (map) map.invalidateSize();
-            }, 300);
-        });
+        w.requestFullscreen().then(() => setTimeout(() => map && map.invalidateSize(), 300));
     } else {
-        document.exitFullscreen().then(() => {
-            setTimeout(() => {
-                if (map) map.invalidateSize();
-            }, 300);
-        });
+        document.exitFullscreen().then(() => setTimeout(() => map && map.invalidateSize(), 300));
     }
 }
-//   Reset Data -->
+
 async function resetData() {
     const user = document.getElementById('userSelect').value;
-    if (!user) {
-        showNotification('Please select a user to reset', 'warning');
-        return;
-    }
-
-    if (!confirm(`Are you sure? This will permanently delete the journey for ${user}.`)) {
-        return;
-    }
+    if (!user) { showNotification('Please select a user to reset', 'warning'); return; }
+    if (!confirm(`Are you sure? This will permanently delete the journey for ${user}.`)) return;
 
     try {
-        // ✅ Get the token from localStorage
-        const sessionData = JSON.parse(localStorage.getItem("supabase_session"));
-        const token = sessionData?.access_token;
-
-        const response = await fetch(`${BACKEND_URL}/locations/user/${user}`, {
+        const token = JSON.parse(localStorage.getItem("supabase_session"))?.access_token;
+        const res = await fetch(`${BACKEND_URL}/locations/user/${user}`, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // ✅ Pass token to satisfy RLS Policy
-            }
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
         });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || "Failed to delete"); }
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || "Failed to delete data");
-        }
-
-        // ... (rest of your UI clearing code stays the same)
-
-        // 1. Clear the Map
         clearMap();
-
-        // 2. Clear the Stats displayed on screen
-        document.getElementById('totalPoints').textContent = '0';
-        document.getElementById('totalDistance').textContent = '0';
-        document.getElementById('totalDuration').textContent = '0';
-        document.getElementById('avgSpeed').textContent = '0';
-
-        // 3. Hide sections and show empty state
-        document.getElementById('statsGrid').style.display = 'none';
-        document.getElementById('timelineSection').style.display = 'none';
-        document.getElementById('mapOverlay').style.display = 'none';
-        
+        ['totalPoints','totalDistance','totalDuration','avgSpeed','emergencyCount']
+            .forEach(id => document.getElementById(id).textContent = '0');
+        ['statsGrid','timelineSection','mapOverlay','mapLegend'].forEach(hide);
         showEmptyState(`Data for ${user} has been cleared.`, 'success');
         showNotification("Journey reset successfully", "success");
 
-    } catch (error) {
-        console.error('Reset error:', error);
-        showNotification(error.message, 'error');
+    } catch (err) {
+        showNotification(err.message, 'error');
     }
 }
 </script>
