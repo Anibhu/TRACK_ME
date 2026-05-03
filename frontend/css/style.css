@@ -426,3 +426,218 @@ button:disabled {
     font-family: monospace;
     backdrop-filter: blur(4px);
   }
+
+
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+.nt-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #080d14;
+  position: relative;
+  overflow: hidden;
+  font-family: 'DM Sans', sans-serif;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+.nt-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,120,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,120,0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridShift 20s linear infinite;
+  pointer-events: none;
+}
+@keyframes gridShift {
+  0%   { transform: translate(0,0); }
+  100% { transform: translate(40px,40px); }
+}
+.nt-pulse {
+  position: absolute;
+  width: 500px; height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,200,100,0.07) 0%, transparent 70%);
+  top: -150px; right: -150px;
+  animation: ntPulse 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+.nt-pulse2 {
+  position: absolute;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,120,255,0.05) 0%, transparent 70%);
+  bottom: -80px; left: -80px;
+  animation: ntPulse 8s ease-in-out 2s infinite alternate;
+  pointer-events: none;
+}
+@keyframes ntPulse {
+  from { transform: scale(1); opacity: 0.5; }
+  to   { transform: scale(1.2); opacity: 1; }
+}
+.nt-card {
+  position: relative;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(0,200,120,0.18);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 0 60px rgba(0,200,100,0.06), 0 30px 60px rgba(0,0,0,0.4);
+  box-sizing: border-box;
+}
+.nt-corner {
+  position: absolute;
+  width: 18px; height: 18px;
+  border-color: #00c878;
+  border-style: solid;
+}
+.nt-corner.tl { top:-1px; left:-1px;   border-width:2px 0 0 2px; border-radius:4px 0 0 0; }
+.nt-corner.tr { top:-1px; right:-1px;  border-width:2px 2px 0 0; border-radius:0 4px 0 0; }
+.nt-corner.bl { bottom:-1px; left:-1px; border-width:0 0 2px 2px; border-radius:0 0 0 4px; }
+.nt-corner.br { bottom:-1px; right:-1px; border-width:0 2px 2px 0; border-radius:0 0 4px 0; }
+.nt-scan-line {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,200,120,0.5), transparent);
+  border-radius: 20px 20px 0 0;
+  animation: scanLine 3s ease-in-out infinite;
+}
+@keyframes scanLine {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  30%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translateX(200%); opacity: 0; }
+}
+.nt-brand { text-align: center; margin-bottom: 2rem; }
+.nt-icon-ring {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,200,120,0.4);
+  background: rgba(0,200,120,0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+.nt-brand h2 {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.3rem;
+}
+.nt-brand p {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.38);
+  margin: 0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+/* Add this to your CSS file or a <style> tag */
+.nt-tabs {
+  display: flex;
+  flex-direction: column;           /* Sits buttons side-by-side */
+  gap: 10px;               /* Adds a small gap between them */
+  margin-bottom: 20px;     /* Space before the input fields */
+  width: 100%;             /* Ensures container fills the card */
+}
+
+.nt-tab {
+  width: 100%;
+  flex: 1;                 /* Makes both buttons equal width */
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #888;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.nt-tab.active {
+  background: rgba(0, 200, 120, 0.1); /* Match your NexusTracker green */
+  border-color: #00c878;
+  color: #00c878;
+  box-shadow: 0 0 15px rgba(0, 200, 120, 0.2);
+}
+.nt-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.nt-field { position: relative; margin-bottom: 1rem; }
+.nt-field-icon {
+  position: absolute;
+  left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: rgba(0,200,120,0.5);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+.nt-field input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem 0.75rem 2.6rem;
+  color: #ffffff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  box-sizing: border-box;
+}
+.nt-field input::placeholder { color: rgba(255,255,255,0.25); }
+.nt-field input:focus {
+  border-color: rgba(0,200,120,0.5);
+  background: rgba(0,200,120,0.04);
+  box-shadow: 0 0 0 3px rgba(0,200,120,0.06);
+}
+.nt-submit {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #00c878, #00a060);
+  color: #041a0f;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  margin-top: 0.5rem;
+  transition: opacity 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.nt-submit:hover { opacity: 0.88; transform: translateY(-1px); }
+.nt-submit:active { transform: scale(0.99); }
+.nt-msg {
+  margin-top: 1.1rem;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.28);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  letter-spacing: 0.03em;
+}
+.nt-demo {
+  margin-top: 0.7rem;
+  text-align: center;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.18);
+  font-family: 'Space Mono', monospace;
+}

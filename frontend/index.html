@@ -97,39 +97,50 @@
 </head>
 
 <body>
-<div id="authSection" class="auth-wrapper">
-  <div class="auth-card">
-    <div class="brand">
-      <div class="brand-icon">
-        <i class="fas fa-map-marker-alt" style="color:white;"></i>
+<div id="authSection" class="nt-wrap">
+  <div class="nt-grid"></div>
+  <div class="nt-pulse"></div>
+  <div class="nt-pulse2"></div>
+
+  <div class="nt-card">
+    <div class="nt-scan-line"></div>
+    <div class="nt-corner tl"></div>
+    <div class="nt-corner tr"></div>
+    <div class="nt-corner bl"></div>
+    <div class="nt-corner br"></div>
+
+    <div class="nt-brand">
+      <div class="nt-icon-ring">
+        <i class="fas fa-map-marker-alt" style="color:#00c878; font-size:1.1rem;"></i>
       </div>
-      <h2>NexusTracker</h2>
+      <h2>JGEC Tracker</h2>
       <p>Secure real-time location intelligence</p>
     </div>
 
-    <div class="input-group">
-      <i class="fas fa-envelope"></i>
+    <div class="nt-tabs">
+      <button class="nt-tab active" onclick="setAuthMode('login',this)">Login</button>
+      <button class="nt-tab" onclick="setAuthMode('signup',this)">Sign Up</button>
+    </div>
+
+    <div class="nt-field">
+      <span class="nt-field-icon"><i class="fas fa-envelope"></i></span>
       <input type="email" id="email" placeholder="Email address" autocomplete="email">
     </div>
-    <div class="input-group">
-      <i class="fas fa-lock"></i>
+    <div class="nt-field">
+      <span class="nt-field-icon"><i class="fas fa-lock"></i></span>
       <input type="password" id="password" placeholder="Password" autocomplete="current-password">
     </div>
 
-    <div class="action-buttons">
-      <button class="btn btn-primary" onclick="login()">
-        <i class="fas fa-arrow-right-to-bracket"></i> Login
-      </button>
-      <button class="btn btn-secondary" onclick="signup()">
-        <i class="fas fa-user-plus"></i> Signup
-      </button>
+    <button class="nt-submit" id="authSubmitBtn" onclick="handleAuthSubmit()">
+      <i class="fas fa-arrow-right" style="font-size:0.85rem;"></i>
+      <span id="authSubmitLabel">Login</span>
+    </button>
+
+    <div id="authResult" class="nt-msg">
+      <i class="fas fa-shield-alt" style="color:rgba(0,200,120,0.5); font-size:0.75rem;"></i>
+      Welcome back, authenticate to continue
     </div>
-    <div id="authResult" class="auth-message">
-      <i class="fas fa-shield-alt"></i> Welcome back, authenticate to continue
-    </div>
-    <div style="margin-top: 0.8rem; text-align: center; font-size: 0.7rem; color:#5b6e8c">
-      Demo: any email & password (mock API)
-    </div>
+    <div class="nt-demo">demo: any email &amp; password (mock API)</div>
   </div>
 </div>
 
@@ -388,6 +399,17 @@ window.onmousedown = resetIdleTimer;
 window.ontouchstart = resetIdleTimer;
 window.onclick = resetIdleTimer;
 window.onkeydown = resetIdleTimer;
+
+let currentAuthMode = 'login';
+function setAuthMode(mode, btn) {
+  currentAuthMode = mode;
+  document.querySelectorAll('.nt-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('authSubmitLabel').textContent = mode === 'login' ? 'Login' : 'Create Account';
+}
+function handleAuthSubmit() {
+  currentAuthMode === 'login' ? login() : signup();
+}
 </script>
 </body>
 </html>
