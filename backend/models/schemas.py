@@ -5,10 +5,11 @@ from datetime import datetime
 class LocationBase(BaseModel):
     latitude: float
     longitude: float
-    user_id:Optional[str] = None
+    user_id: Optional[str] = None
 
 class LocationCreate(LocationBase):
-    timestamp: Optional[float] = None
+    timestamp:    Optional[float] = None
+    is_emergency: bool = False          # ← ADDED
 
 class LocationResponse(LocationBase):
     id: int
