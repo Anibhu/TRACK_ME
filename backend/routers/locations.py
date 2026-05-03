@@ -11,14 +11,14 @@ router = APIRouter()
 # SAVE LOCATION (SUPABASE)
 # ===============================
 @router.post("/locations/save", response_model=APIResponse)
-async def save_user_location(
-    location: LocationCreate):
+async def save_user_location(location: LocationCreate):
     try:
         response = supabase.table("locations").insert({
-            "user_id": location.user_id,
-            "lat": location.latitude,
-            "lng": location.longitude,
-            "timestamp": int(location.timestamp)
+            "user_id":      location.user_id,
+            "lat":          location.latitude,
+            "lng":          location.longitude,
+            "timestamp":    int(location.timestamp),
+            "is_emergency": location.is_emergency   # ← FIXED: was missing
         }).execute()
 
         return APIResponse(
@@ -28,7 +28,7 @@ async def save_user_location(
         )
 
     except Exception as e:
-        print(f"SAVE ERROR: {e}") # This helps you see the error in Render logs
+        print(f"SAVE ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -41,6 +41,7 @@ async def get_user_path(user_id: str, limit: int = 1000):
         response = supabase.table("locations") \
             .select("*") \
             .eq("user_id", user_id) \
+            .order("timestamp", desc=False) \
             .limit(limit) \
             .execute()
 
@@ -89,7 +90,8 @@ async def get_recent_locations(user_id: str, count: int = 10):
             status_code=500,
             detail=f"Error retrieving recent locations: {str(e)}"
         )
-    
+
+
 # ===============================
 # DELETE USER LOCATIONS (RESET)
 # ===============================
@@ -101,16 +103,15 @@ async def delete_user_locations(user_id: str):
             .eq("user_id", user_id) \
             .execute()
 
-        # ✅ Fix: Wrap the list in a dictionary to satisfy Pydantic
         return APIResponse(
             status="success",
             message=f"Journey data for {user_id} has been reset.",
-            data={"deleted_records": response.data} 
+            data={"deleted_records": response.data}
         )
 
     except Exception as e:
         print(f"DELETE ERROR: {e}")
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Failed to clear data: {str(e)}"
         )
