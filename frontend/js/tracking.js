@@ -1,7 +1,5 @@
-
 // Backend URL
 const BACKEND_URL = 'https://track-me-backend-rzto.onrender.com/api/v1';
-
 
 // ===============================
 // EMERGENCY LOCATIONS (MANUAL)
@@ -58,8 +56,13 @@ function updateCurrentLocation(lat, lng) {
 
 // ===============================
 // SEND LOCATION TO BACKEND
+// Accepts an optional isEmergency flag (default false).
+// When true, is_emergency: true is included in the payload so the
+// backend (and view_path.html) can mark the point on the path.
 // ===============================
-async function sendLocationToServer(latitude, longitude) {
+async function sendLocationToServer(latitude, longitude, isEmergency = false) {
+    if (isEmergency) alert("🚨 Emergency flag is TRUE"); // ← ADD THIS
+    
     const sessionData = JSON.parse(localStorage.getItem("supabase_session"));
     const token = sessionData?.access_token;
     const savedUserId = localStorage.getItem("user_id") || document.getElementById("userId")?.value;
@@ -78,7 +81,8 @@ async function sendLocationToServer(latitude, longitude) {
                 user_id: savedUserId,
                 latitude,
                 longitude,
-                timestamp: Math.floor(Date.now())
+                timestamp: Math.floor(Date.now()),
+                is_emergency: isEmergency   // ← flagged true only on emergency press
             })
         });
         if (!response.ok) {
@@ -176,7 +180,6 @@ function showEmergencyMarkers() {
 
     clearEmergencyMarkers();
 
-    // Need user position to rank distances
     const userLat = lastUserLat;
     const userLon = lastUserLon;
 
@@ -313,7 +316,7 @@ function startTracking() {
             lastUserLon = lng;
 
             updateCurrentLocation(lat, lng);
-            await sendLocationToServer(lat, lng);
+            await sendLocationToServer(lat, lng); // normal point, no emergency flag
 
             if (window.trackingMap) {
                 window.trackingMap.setView(lat, lng, 16);
@@ -342,13 +345,12 @@ function startContinuousTracking() {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
 
-                // Always keep last known position up to date
                 lastUserLat = lat;
                 lastUserLon = lng;
 
                 updateCurrentLocation(lat, lng);
                 checkGeofence(lat, lng);
-                await sendLocationToServer(lat, lng);
+                await sendLocationToServer(lat, lng); // normal point, no emergency flag
 
                 if (window.trackingMap) {
                     window.trackingMap.clearMarkers();
@@ -395,6 +397,8 @@ function stopTracking() {
 
 // ===============================
 // 🚨 EMERGENCY — trigger
+// Sends current location with is_emergency: true so view_path.html
+// can display a 🚨 marker at the exact point the button was pressed.
 // ===============================
 async function triggerEmergency() {
     navigator.geolocation.getCurrentPosition(async (position) => {
@@ -405,7 +409,8 @@ async function triggerEmergency() {
         lastUserLat = lat;
         lastUserLon = lng;
 
-        await sendLocationToServer(lat, lng);
+        // ← is_emergency: true — this is the only call that sets the flag
+        await sendLocationToServer(lat, lng, true);
 
         isEmergencyActive = true;
         document.getElementById('stopEmergencyBtn').disabled = false;
