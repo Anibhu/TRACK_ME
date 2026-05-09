@@ -402,6 +402,12 @@ function stopTracking() {
 // Sends current location with is_emergency: true so view_path.html
 // can display a 🚨 marker at the exact point the button was pressed.
 // ===============================
+// ===============================
+// 🚨 EMERGENCY — trigger
+// Sends current location with is_emergency: true AND
+// opens SMS app pre-filled with Google Maps link
+// for both the user and their helper/guardian.
+// ===============================
 async function triggerEmergency() {
     navigator.geolocation.getCurrentPosition(async (position) => {
 
@@ -411,20 +417,63 @@ async function triggerEmergency() {
         lastUserLat = lat;
         lastUserLon = lng;
 
-        // ← is_emergency: true — this is the only call that sets the flag
+        // Save emergency point to backend
         await sendLocationToServer(lat, lng, true);
 
         isEmergencyActive = true;
         document.getElementById('stopEmergencyBtn').disabled = false;
 
-        // Show only nearest hospital + nearest police station
+        // Show nearest hospital + police on map
         showEmergencyMarkers();
-
         updateStatus("🚨 Emergency Mode Active — Nearest help shown on map");
-        alert("🚨 Emergency activated!\nNearest hospital and police station are now marked on the map.");
-    });
+
+        // ── SOS SMS ───────────────────────────────────────────────────────
+        sendSOSSms(lat, lng);
+        // ─────────────────────────────────────────────────────────────────
+
+        alert("🚨 Emergency activated!\nNearest hospital and police station are now marked on the map.\nSOS SMS is being sent to your contacts.");
+
+    }, handleGeolocationError, { enableHighAccuracy: true });
 }
 
+
+// ===============================
+// 📱 SEND SOS SMS
+// Opens the phone's default SMS app pre-filled with
+// an emergency message containing a Google Maps link.
+// Sends to both user's own number and helper number.
+// ===============================
+function sendSOSSms(lat, lng) {
+    const userPhone   = localStorage.getItem("user_phone")   || "";
+    const helperPhone = localStorage.getItem("helper_phone") || "";
+
+    if (!userPhone && !helperPhone) {
+        alert("⚠️ No emergency contacts saved!\nPlease edit your contacts in the app.");
+        return;
+    }
+
+    const mapsLink = `https://maps.google.com/?q=${lat},${lng}`;
+    const message  = encodeURIComponent(
+        `🚨 EMERGENCY ALERT!\n` +
+        `I need help. My current location:\n` +
+        `${mapsLink}\n` +
+        `Please contact me immediately!`
+    );
+
+    // Send to helper first (most important)
+    if (helperPhone) {
+        const helperSmsLink = `sms:${helperPhone}?body=${message}`;
+        window.open(helperSmsLink, '_blank');
+    }
+
+    // Small delay then send to user's own number
+    if (userPhone) {
+        setTimeout(() => {
+            const userSmsLink = `sms:${userPhone}?body=${message}`;
+            window.open(userSmsLink, '_blank');
+        }, 1500);
+    }
+}
 
 // ===============================
 // ⛔ STOP EMERGENCY
