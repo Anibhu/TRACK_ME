@@ -5,14 +5,16 @@ const BACKEND_URL = 'https://track-me-backend-rzto.onrender.com/api/v1';
 // EMERGENCY LOCATIONS (MANUAL)
 // ===============================
 const EMERGENCY_HOSPITALS = [
-    { name: "Jalpaiguri District Hospital",          lat: 26.5244, lon: 88.7197, ph: 9474122840 },
+    { name: "Jalpaiguri District Hospital",          lat: 26.5244, lon: 88.7197, ph: 917478205691},
     { name: "North Bengal Medical College and Hospital", lat: 26.6873, lon: 88.3945, ph: 9474122840 },
     { name: "Maynaguri Rural Hospital",              lat: 26.5652, lon: 88.8196, ph: 9474122840 },
-    { name: "Arogya Nursing Home (Jalpaiguri)",      lat: 26.5258, lon: 88.7229, ph: 9474122840 }
+    { name: "Arogya Nursing Home (Jalpaiguri)",      lat: 26.5258, lon: 88.7229, ph: 9474122840 },
+    { name: "Jalpaiguri Superspeciality Hospital",  lat: 26.5167, lon: 88.7075, ph: 3561232002 },
 ];
 
 const EMERGENCY_POLICE_STATIONS = [
     { name: "Kotwali Police Station (Jalpaiguri)",   lat: 26.5246, lon: 88.7266, ph: 9474122840 },
+    { name: "Jalpaiguri cyber crime police station",   lat: 26.5404, lon: 88.7193, ph: 9474122840 },
     { name: "Maynaguri Police Station",              lat: 26.5625, lon: 88.8210, ph: 9474122840 }
 ];
 
