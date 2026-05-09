@@ -3,15 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Location Tracker</title>
-
 <link rel="stylesheet" href="css/style.css">
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
 <style>
   /* ===============================
      COLLEGE SELECTOR STYLES
@@ -27,7 +22,6 @@
     gap: 1rem;
     flex-wrap: wrap;
   }
-
   .college-selector-wrapper label {
     font-size: 0.9rem;
     font-weight: 600;
@@ -37,13 +31,11 @@
     align-items: center;
     gap: 0.4rem;
   }
-
   .college-btn-group {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
   }
-
   .college-btn {
     padding: 0.45rem 1.1rem;
     border-radius: 8px;
@@ -56,209 +48,257 @@
     transition: all 0.2s ease;
     letter-spacing: 0.03em;
   }
-
-  .college-btn:hover {
-    border-color: #60a5fa;
-    color: #60a5fa;
-    background: #1e3a5f;
-  }
-
+  .college-btn:hover { border-color: #60a5fa; color: #60a5fa; background: #1e3a5f; }
   .college-btn.active {
-    background: #2563eb;
-    border-color: #3b82f6;
-    color: #ffffff;
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    background: #2563eb; border-color: #3b82f6; color: #ffffff;
+    box-shadow: 0 0 12px rgba(59,130,246,0.4);
   }
-
-  .college-btn.active:hover {
-    background: #1d4ed8;
-  }
-
-  /* Hidden native select - used as the actual value store */
-  #collegeSelect {
-    display: none;
-  }
-
+  .college-btn.active:hover { background: #1d4ed8; }
+  #collegeSelect { display: none; }
   .college-badge {
-    margin-left: auto;
-    font-size: 0.75rem;
+    margin-left: auto; font-size: 0.75rem; color: #64748b;
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .college-badge span { color: #3b82f6; font-weight: 700; }
+
+  /* ===============================
+     PHONE INPUT STYLES
+  ================================ */
+  .phone-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(37,99,235,0.08);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 10px;
+  }
+  .phone-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #60a5fa;
+    margin-bottom: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .phone-note {
+    font-size: 0.72rem;
     color: #64748b;
+    margin-top: 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.3rem;
   }
 
-  .college-badge span {
-    color: #3b82f6;
-    font-weight: 700;
+  /* ===============================
+     EMERGENCY CONTACT PANEL (in app)
+  ================================ */
+  .contact-panel {
+    margin: 0.8rem 0;
+    padding: 0.9rem 1.1rem;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
   }
+  .contact-panel-label {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+  }
+  .contact-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    color: #e2e8f0;
+  }
+  .contact-chip i { color: #3b82f6; font-size: 0.75rem; }
+  .edit-contacts-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #64748b;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .edit-contacts-btn:hover { border-color: #60a5fa; color: #60a5fa; }
 </style>
-
 </head>
 
 <body>
-<div id="authSection" class="nt-wrap">
-  <div class="nt-grid"></div>
-  <div class="nt-pulse"></div>
-  <div class="nt-pulse2"></div>
-
-  <div class="nt-card">
-    <div class="nt-scan-line"></div>
-    <div class="nt-corner tl"></div>
-    <div class="nt-corner tr"></div>
-    <div class="nt-corner bl"></div>
-    <div class="nt-corner br"></div>
-
-    <div class="nt-brand">
-      <div class="nt-icon-ring">
-        <i class="fas fa-map-marker-alt" style="color:#00c878; font-size:1.1rem;"></i>
+<!-- ===============================
+     AUTH SECTION
+================================ -->
+<div id="authSection" class="auth-wrapper">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="fas fa-map-marker-alt" style="color:white;"></i>
       </div>
-      <h2>JGEC Tracker</h2>
+      <h2>NexusTracker</h2>
       <p>Secure real-time location intelligence</p>
     </div>
 
-    <div class="nt-tabs">
-      <button class="nt-tab active" onclick="setAuthMode('login',this)">Login</button>
-      <button class="nt-tab" onclick="setAuthMode('signup',this)">Sign Up</button>
-    </div>
-
-    <div class="nt-field">
-      <span class="nt-field-icon"><i class="fas fa-envelope"></i></span>
+    <div class="input-group">
+      <i class="fas fa-envelope"></i>
       <input type="email" id="email" placeholder="Email address" autocomplete="email">
     </div>
-    <div class="nt-field">
-      <span class="nt-field-icon"><i class="fas fa-lock"></i></span>
+    <div class="input-group">
+      <i class="fas fa-lock"></i>
       <input type="password" id="password" placeholder="Password" autocomplete="current-password">
     </div>
 
-    <button class="nt-submit" id="authSubmitBtn" onclick="handleAuthSubmit()">
-      <i class="fas fa-arrow-right" style="font-size:0.85rem;"></i>
-      <span id="authSubmitLabel">Login</span>
-    </button>
-
-    <div id="authResult" class="nt-msg">
-      <i class="fas fa-shield-alt" style="color:rgba(0,200,120,0.5); font-size:0.75rem;"></i>
-      Welcome back, authenticate to continue
+    <!-- Phone fields shown only during signup -->
+    <div class="phone-section" id="phoneSection" style="display:none;">
+      <div class="phone-section-title">
+        <i class="fas fa-shield-halved"></i> Emergency Contacts
+      </div>
+      <div class="input-group">
+        <i class="fas fa-mobile-alt"></i>
+        <input type="tel" id="userPhone" placeholder="Your phone number (e.g. +919876543210)">
+      </div>
+      <div class="input-group" style="margin-top:0.6rem;">
+        <i class="fas fa-user-shield"></i>
+        <input type="tel" id="helperPhone" placeholder="Helper/Guardian phone number">
+      </div>
+      <div class="phone-note">
+        <i class="fas fa-info-circle"></i>
+        Both numbers will receive an SMS with your location when you press EMERGENCY
+      </div>
     </div>
-    <div class="nt-demo">demo: any email &amp; password (mock API)</div>
+
+    <div class="action-buttons">
+      <button class="btn btn-primary" onclick="login()">
+        <i class="fas fa-arrow-right-to-bracket"></i> Login
+      </button>
+      <button class="btn btn-secondary" id="signupBtn" onclick="toggleSignup()">
+        <i class="fas fa-user-plus"></i> Signup
+      </button>
+    </div>
+
+    <!-- Signup confirm button (shown when signup mode active) -->
+    <div id="signupConfirmDiv" style="display:none; margin-top:0.8rem;">
+      <button class="btn btn-primary" style="width:100%;background:#16a34a;" onclick="signup()">
+        <i class="fas fa-check"></i> Create Account
+      </button>
+      <button class="btn" style="width:100%;margin-top:0.5rem;background:transparent;border:1px solid #334155;color:#94a3b8;" onclick="cancelSignup()">
+        Cancel
+      </button>
+    </div>
+
+    <div id="authResult" class="auth-message">
+      <i class="fas fa-shield-alt"></i> Welcome back, authenticate to continue
+    </div>
   </div>
 </div>
 
+<!-- ===============================
+     MAIN APP
+================================ -->
 <div class="container" id="app" style="display:none;">
-    <div class="container">
+  <div class="container">
 
     <h1>📍 Location Tracker</h1>
-    <button class="btn btn-danger" onclick="logout()" style="background-color: #ef4444; color: white; padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer;">
+    <button class="btn btn-danger" onclick="logout()" style="background-color:#ef4444;color:white;padding:10px 15px;border-radius:8px;border:none;cursor:pointer;">
       <i class="fas fa-sign-out-alt"></i> Logout
     </button>
 
     <div class="user-section">
-
       <label for="userId">
         <i class="fa fa-user"></i> User ID:
       </label>
-
       <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
-
       <button onclick="updateUserId()">
         <i class="fa fa-sync"></i> Update User
       </button>
-
     </div>
 
-    <!-- ===============================
-         COLLEGE SELECTOR
-    ================================ -->
-    <div class="college-selector-wrapper">
-      <label>
-        <i class="fas fa-university"></i> Select Campus:
-      </label>
+    <!-- Emergency Contacts Display -->
+    <div class="contact-panel" id="contactPanel">
+      <span class="contact-panel-label"><i class="fas fa-shield-halved"></i> SOS Contacts:</span>
+      <span class="contact-chip" id="userChip">
+        <i class="fas fa-mobile-alt"></i>
+        <span id="userPhoneDisplay">Not set</span>
+      </span>
+      <span class="contact-chip" id="helperChip">
+        <i class="fas fa-user-shield"></i>
+        <span id="helperPhoneDisplay">Not set</span>
+      </span>
+      <button class="edit-contacts-btn" onclick="editContacts()">
+        <i class="fas fa-pen"></i> Edit
+      </button>
+    </div>
 
-      <!-- Hidden select holds the actual value read by tracking.js -->
+    <!-- College Selector -->
+    <div class="college-selector-wrapper">
+      <label><i class="fas fa-university"></i> Select Campus:</label>
       <select id="collegeSelect">
         <option value="JGEC">JGEC</option>
         <option value="CGEC">CGEC</option>
       </select>
-
-      <!-- Visual toggle buttons -->
       <div class="college-btn-group">
-        <button
-          class="college-btn active"
-          id="btn-JGEC"
-          onclick="selectCollege('JGEC')"
-          title="Jalpaiguri Government Engineering College">
+        <button class="college-btn active" id="btn-JGEC" onclick="selectCollege('JGEC')" title="Jalpaiguri Government Engineering College">
           🏛️ JGEC
         </button>
-        <button
-          class="college-btn"
-          id="btn-CGEC"
-          onclick="selectCollege('CGEC')"
-          title="Cooch Behar Government Engineering College">
+        <button class="college-btn" id="btn-CGEC" onclick="selectCollege('CGEC')" title="Cooch Behar Government Engineering College">
           🏛️ CGEC
         </button>
       </div>
-
       <div class="college-badge">
         <i class="fas fa-location-dot"></i> Geofence: <span id="activeCampusLabel">JGEC</span>
       </div>
     </div>
 
     <div class="status">
-
-      <p id="status">
-        <i class="fa fa-info-circle"></i> Ready to track location...
-      </p>
-
-      <p id="currentLocation">
-        <i class="fa fa-map-marker-alt"></i> No location data yet
-      </p>
-
+      <p id="status"><i class="fa fa-info-circle"></i> Ready to track location...</p>
+      <p id="currentLocation"><i class="fa fa-map-marker-alt"></i> No location data yet</p>
     </div>
 
-    <!-- ===============================
-         CONTROLS SECTION
-    ================================ -->
+    <!-- Controls -->
     <div class="controls">
-
-        <button onclick="startTracking()" id="startBtn">
-            <i class="fa fa-play"></i> Start Tracking
-        </button>
-
-        <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
-            <i class="fa fa-exclamation-triangle"></i> EMERGENCY
-        </button>
-
-        <button onclick="stopEmergency()" id="stopEmergencyBtn" disabled style="background-color:#6b7280;">
-            <i class="fa fa-ban"></i> Stop Emergency
-        </button>
-
-        <button onclick="stopTracking()" id="stopBtn" disabled>
-            <i class="fa fa-stop"></i> Stop Tracking
-        </button>
-
+      <button onclick="startTracking()" id="startBtn">
+        <i class="fa fa-play"></i> Start Tracking
+      </button>
+      <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
+        <i class="fa fa-exclamation-triangle"></i> EMERGENCY
+      </button>
+      <button onclick="stopEmergency()" id="stopEmergencyBtn" disabled style="background-color:#6b7280;">
+        <i class="fa fa-ban"></i> Stop Emergency
+      </button>
+      <button onclick="stopTracking()" id="stopBtn" disabled>
+        <i class="fa fa-stop"></i> Stop Tracking
+      </button>
     </div>
 
     <div class="navigation">
-
       <a href="view_path.html" class="nav-link">
         <i class="fa fa-route"></i> View User Paths →
       </a>
-
     </div>
 
     <div class="map-container">
-
       <div id="map"></div>
-
-      <button class="fullscreen-btn" onclick="toggleFullscreenMap()">
-        ⛶
-      </button>
-
+      <button class="fullscreen-btn" onclick="toggleFullscreenMap()">⛶</button>
     </div>
 
-    </div>
+  </div>
 </div>
-
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
@@ -269,44 +309,46 @@
 // COLLEGE SELECTOR LOGIC
 // ===============================
 function selectCollege(college) {
-    // Update hidden select value
     document.getElementById('collegeSelect').value = college;
-
-    // Update button styles
     document.querySelectorAll('.college-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById('btn-' + college).classList.add('active');
-
-    // Update badge label
     document.getElementById('activeCampusLabel').textContent = college;
-
-    // Instantly update the geofence on the map
-    if (window.trackingMap) {
-        window.trackingMap.setGeofence(college);
-    }
+    if (window.trackingMap) window.trackingMap.setGeofence(college);
 }
 
-// --- CONFIGURATION ---
-const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
-let idleTimer;
+// ===============================
+// SIGNUP TOGGLE
+// ===============================
+let signupMode = false;
 
-// --- 1. SESSION CHECK ON LOAD ---
-window.onload = () => {
-    const session = localStorage.getItem("supabase_session");
-    if (session) {
-        showApp();
-        resetIdleTimer();
-    }
-};
+function toggleSignup() {
+    signupMode = true;
+    document.getElementById('phoneSection').style.display = 'block';
+    document.getElementById('signupConfirmDiv').style.display = 'block';
+    document.getElementById('signupBtn').style.display = 'none';
+    document.querySelector('.btn-primary').style.display = 'none'; // hide login btn
+}
 
-// --- 2. SIGNUP FUNCTION ---
+function cancelSignup() {
+    signupMode = false;
+    document.getElementById('phoneSection').style.display = 'none';
+    document.getElementById('signupConfirmDiv').style.display = 'none';
+    document.getElementById('signupBtn').style.display = '';
+    document.querySelector('.btn-primary').style.display = '';
+}
+
+// ===============================
+// SIGNUP
+// ===============================
 async function signup() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const email      = document.getElementById("email").value.trim();
+    const password   = document.getElementById("password").value;
+    const userPhone  = document.getElementById("userPhone").value.trim();
+    const helperPhone= document.getElementById("helperPhone").value.trim();
 
-    if (!email || !password) {
-        alert("Please enter both email and password");
-        return;
-    }
+    if (!email || !password) { alert("Please enter email and password"); return; }
+    if (!userPhone)          { alert("Please enter your phone number"); return; }
+    if (!helperPhone)        { alert("Please enter a helper/guardian phone number"); return; }
 
     try {
         const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/signup", {
@@ -314,12 +356,13 @@ async function signup() {
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ email, password })
         });
-
         const data = await res.json();
 
         if (data.status === "success") {
             localStorage.setItem("supabase_session", JSON.stringify(data.session));
             localStorage.setItem("user_id", data.user.id);
+            localStorage.setItem("user_phone",   userPhone);
+            localStorage.setItem("helper_phone", helperPhone);
 
             alert("Account created successfully!");
             showApp();
@@ -332,9 +375,11 @@ async function signup() {
     }
 }
 
-// --- 3. LOGIN FUNCTION ---
+// ===============================
+// LOGIN
+// ===============================
 async function login() {
-    const email = document.getElementById("email").value;
+    const email    = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
@@ -343,13 +388,11 @@ async function login() {
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ email, password })
         });
-
         const data = await res.json();
 
         if (data.status === "success") {
             localStorage.setItem("supabase_session", JSON.stringify(data.session));
             localStorage.setItem("user_id", data.user.id);
-
             showApp();
             resetIdleTimer();
         } else {
@@ -363,53 +406,80 @@ async function login() {
 function logout() {
     localStorage.removeItem("supabase_session");
     localStorage.removeItem("user_id");
+    // Keep phones saved so user doesn't re-enter after login
     location.reload();
 }
 
-// --- 4. UI TOGGLE ---
+// ===============================
+// SHOW APP
+// ===============================
 function showApp() {
     document.getElementById("authSection").style.display = "none";
     document.getElementById("app").style.display = "block";
+
     if (!window.trackingMap) {
         window.trackingMap = new MapManager('map');
     } else {
         window.trackingMap.map.invalidateSize();
     }
+
     const savedId = localStorage.getItem("user_id");
     if (savedId) {
         document.getElementById("userId").value = savedId;
         if (typeof currentUser !== 'undefined') currentUser = savedId;
     }
+
+    // Show saved phone numbers
+    updateContactDisplay();
 }
 
-// --- 5. INACTIVITY LOGIC ---
+// ===============================
+// CONTACT DISPLAY
+// ===============================
+function updateContactDisplay() {
+    const uPhone = localStorage.getItem("user_phone")   || "Not set";
+    const hPhone = localStorage.getItem("helper_phone") || "Not set";
+    document.getElementById("userPhoneDisplay").textContent   = uPhone;
+    document.getElementById("helperPhoneDisplay").textContent = hPhone;
+}
+
+function editContacts() {
+    const uPhone = prompt("Your phone number:", localStorage.getItem("user_phone") || "");
+    if (uPhone === null) return;
+    const hPhone = prompt("Helper/Guardian phone number:", localStorage.getItem("helper_phone") || "");
+    if (hPhone === null) return;
+
+    if (uPhone) localStorage.setItem("user_phone", uPhone);
+    if (hPhone) localStorage.setItem("helper_phone", hPhone);
+    updateContactDisplay();
+    alert("Contacts updated!");
+}
+
+// ===============================
+// INACTIVITY
+// ===============================
+const INACTIVITY_LIMIT = 5 * 60 * 1000;
+let idleTimer;
+
 function resetIdleTimer() {
     if (!localStorage.getItem("supabase_session")) return;
-
     clearTimeout(idleTimer);
-
     idleTimer = setTimeout(() => {
         alert("You have been logged out due to 5 minutes of inactivity.");
         logout();
     }, INACTIVITY_LIMIT);
 }
 
-window.onmousemove = resetIdleTimer;
-window.onmousedown = resetIdleTimer;
-window.ontouchstart = resetIdleTimer;
-window.onclick = resetIdleTimer;
-window.onkeydown = resetIdleTimer;
+window.onload = () => {
+    const session = localStorage.getItem("supabase_session");
+    if (session) { showApp(); resetIdleTimer(); }
+};
 
-let currentAuthMode = 'login';
-function setAuthMode(mode, btn) {
-  currentAuthMode = mode;
-  document.querySelectorAll('.nt-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('authSubmitLabel').textContent = mode === 'login' ? 'Login' : 'Create Account';
-}
-function handleAuthSubmit() {
-  currentAuthMode === 'login' ? login() : signup();
-}
+window.onmousemove  = resetIdleTimer;
+window.onmousedown  = resetIdleTimer;
+window.ontouchstart = resetIdleTimer;
+window.onclick      = resetIdleTimer;
+window.onkeydown    = resetIdleTimer;
 </script>
 </body>
 </html>
