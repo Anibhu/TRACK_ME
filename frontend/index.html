@@ -7,236 +7,593 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 <style>
-  /* ===============================
-     COLLEGE SELECTOR STYLES
-  ================================ */
-  .college-selector-wrapper {
-    margin: 1rem 0;
-    padding: 1rem 1.2rem;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border: 1px solid #334155;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  .college-selector-wrapper label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #94a3b8;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-  .college-btn-group {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-  .college-btn {
-    padding: 0.45rem 1.1rem;
-    border-radius: 8px;
-    border: 2px solid #334155;
-    background: #1e293b;
-    color: #94a3b8;
-    font-size: 0.85rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    letter-spacing: 0.03em;
-  }
-  .college-btn:hover { border-color: #60a5fa; color: #60a5fa; background: #1e3a5f; }
-  .college-btn.active {
-    background: #2563eb; border-color: #3b82f6; color: #ffffff;
-    box-shadow: 0 0 12px rgba(59,130,246,0.4);
-  }
-  .college-btn.active:hover { background: #1d4ed8; }
-  #collegeSelect { display: none; }
-  .college-badge {
-    margin-left: auto; font-size: 0.75rem; color: #64748b;
-    display: flex; align-items: center; gap: 0.3rem;
-  }
-  .college-badge span { color: #3b82f6; font-weight: 700; }
+/* ── RESET & BASE ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* ===============================
-     PHONE INPUT STYLES
-  ================================ */
-  .phone-section {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(37,99,235,0.08);
-    border: 1px solid rgba(59,130,246,0.25);
-    border-radius: 10px;
-  }
-  .phone-section-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #60a5fa;
-    margin-bottom: 0.7rem;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .phone-note {
-    font-size: 0.72rem;
-    color: #64748b;
-    margin-top: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
+:root {
+  --gold:        #c9a84c;
+  --gold-light:  #e8c97a;
+  --gold-dim:    rgba(201,168,76,0.15);
+  --gold-border: rgba(201,168,76,0.3);
+  --bg:          #060810;
+  --bg2:         #0d1117;
+  --bg3:         #111827;
+  --surface:     rgba(13,17,23,0.92);
+  --text:        #e8e6e1;
+  --text-muted:  #7a8394;
+  --red:         #e05252;
+  --green:       #3ecf8e;
+  --blue:        #4f8ef7;
+  --radius:      14px;
+}
 
-  /* ===============================
-     EMERGENCY CONTACT PANEL (in app)
-  ================================ */
-  .contact-panel {
-    margin: 0.8rem 0;
-    padding: 0.9rem 1.1rem;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border: 1px solid #334155;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    flex-wrap: wrap;
-  }
-  .contact-panel-label {
-    font-size: 0.82rem;
-    color: #94a3b8;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    white-space: nowrap;
-  }
-  .contact-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 20px;
-    padding: 0.3rem 0.8rem;
-    font-size: 0.8rem;
-    color: #e2e8f0;
-  }
-  .contact-chip i { color: #3b82f6; font-size: 0.75rem; }
-  .edit-contacts-btn {
-    margin-left: auto;
-    background: none;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    color: #64748b;
-    font-size: 0.75rem;
-    padding: 0.3rem 0.7rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .edit-contacts-btn:hover { border-color: #60a5fa; color: #60a5fa; }
+html, body {
+  height: 100%;
+  font-family: 'Raleway', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* ── ANIMATED BACKGROUND ──────────────────────────────────────────── */
+.bg-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Star field */
+.bg-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 40% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 75%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 55%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 95%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,0.5) 0%, transparent 100%);
+}
+
+/* Radial glow orbs */
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: orbFloat 12s ease-in-out infinite alternate;
+}
+.bg-orb-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+  top: -100px; left: -100px;
+  animation-delay: 0s;
+}
+.bg-orb-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(79,142,247,0.07) 0%, transparent 70%);
+  bottom: -80px; right: -80px;
+  animation-delay: -5s;
+}
+.bg-orb-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -8s;
+}
+
+/* Grid overlay */
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+@keyframes orbFloat {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(30px, 20px) scale(1.1); }
+}
+
+/* ── AUTH PAGE LAYOUT ─────────────────────────────────────────────── */
+.auth-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* Site wordmark above the card */
+.site-wordmark {
+  text-align: center;
+  margin-bottom: 2.2rem;
+  animation: fadeDown 0.7s ease both;
+}
+.site-wordmark h1 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  text-shadow: 0 0 40px rgba(201,168,76,0.4);
+}
+.site-wordmark p {
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+}
+
+/* Gold divider line */
+.gold-line {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 0.7rem auto 0;
+}
+
+/* ── AUTH CARD ────────────────────────────────────────────────────── */
+.auth-card-premium {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--gold-border);
+  border-radius: 20px;
+  padding: 2.4rem 2rem;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(201,168,76,0.05),
+    0 20px 60px rgba(0,0,0,0.6),
+    0 0 80px rgba(201,168,76,0.05) inset;
+  animation: fadeUp 0.7s ease 0.15s both;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Corner accent */
+.auth-card-premium::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle at top left, rgba(201,168,76,0.08), transparent 70%);
+  pointer-events: none;
+}
+.auth-card-premium::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 100px; height: 100px;
+  background: radial-gradient(circle at bottom right, rgba(79,142,247,0.06), transparent 70%);
+  pointer-events: none;
+}
+
+/* Icon + title inside card */
+.card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.card-icon {
+  width: 58px; height: 58px;
+  background: linear-gradient(135deg, var(--gold) 0%, #8b6914 100%);
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #000;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 24px rgba(201,168,76,0.3);
+}
+.card-header h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+.card-header p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  letter-spacing: 0.05em;
+}
+
+/* ── INPUTS ───────────────────────────────────────────────────────── */
+.field {
+  position: relative;
+  margin-bottom: 1rem;
+}
+.field i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+  font-size: 0.85rem;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+.field input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.6rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.field input::placeholder { color: #4a5568; }
+.field input:focus {
+  border-color: var(--gold-border);
+  background: rgba(201,168,76,0.04);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.08);
+}
+.field input:focus + i,
+.field i:has(+ input:focus) { color: var(--gold-light); }
+
+/* ── PHONE SECTION ────────────────────────────────────────────────── */
+.phone-section {
+  margin: 1rem 0;
+  padding: 1.1rem;
+  background: rgba(201,168,76,0.04);
+  border: 1px solid var(--gold-border);
+  border-radius: 12px;
+}
+.phone-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.phone-note {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.6rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  line-height: 1.5;
+}
+
+/* ── BUTTONS ──────────────────────────────────────────────────────── */
+.btn-row {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+.btn-gold {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, var(--gold) 0%, #a07820 100%);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.3);
+  transform: translateY(-1px);
+}
+.btn-outline {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  color: var(--gold);
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+}
+.btn-outline:hover {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.1);
+  transform: translateY(-1px);
+}
+.btn-full {
+  width: 100%;
+  margin-top: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.btn-green {
+  background: linear-gradient(135deg, #3ecf8e 0%, #1a8f5e 100%);
+  border: none;
+  color: #000;
+}
+.btn-green:hover {
+  box-shadow: 0 8px 24px rgba(62,207,142,0.3);
+  transform: translateY(-1px);
+}
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-muted);
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+
+/* Auth message */
+.auth-msg {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* ── ANIMATIONS ───────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+
+/* ── APP SECTION ──────────────────────────────────────────────────── */
+#app {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── COLLEGE SELECTOR ─────────────────────────────────────────────── */
+.college-selector-wrapper {
+  margin: 1rem 0;
+  padding: 1rem 1.2rem;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.college-selector-wrapper label {
+  font-size: 0.9rem; font-weight: 600; color: #94a3b8;
+  white-space: nowrap; display: flex; align-items: center; gap: 0.4rem;
+}
+.college-btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.college-btn {
+  padding: 0.45rem 1.1rem; border-radius: 8px;
+  border: 2px solid #334155; background: #1e293b;
+  color: #94a3b8; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.03em;
+}
+.college-btn:hover { border-color: #60a5fa; color: #60a5fa; background: #1e3a5f; }
+.college-btn.active {
+  background: #2563eb; border-color: #3b82f6; color: #fff;
+  box-shadow: 0 0 12px rgba(59,130,246,0.4);
+}
+#collegeSelect { display: none; }
+.college-badge {
+  margin-left: auto; font-size: 0.75rem; color: #64748b;
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.college-badge span { color: #3b82f6; font-weight: 700; }
+
+/* ── CONTACT PANEL ────────────────────────────────────────────────── */
+.contact-panel {
+  margin: 0.8rem 0;
+  padding: 0.9rem 1.1rem;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
+}
+.contact-panel-label {
+  font-size: 0.82rem; color: #94a3b8; font-weight: 600;
+  display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;
+}
+.contact-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 20px; padding: 0.3rem 0.8rem;
+  font-size: 0.8rem; color: #e2e8f0;
+}
+.contact-chip i { color: #3b82f6; font-size: 0.75rem; }
+.edit-contacts-btn {
+  margin-left: auto; background: none; border: 1px solid #334155;
+  border-radius: 8px; color: #64748b; font-size: 0.75rem;
+  padding: 0.3rem 0.7rem; cursor: pointer; transition: all 0.2s;
+}
+.edit-contacts-btn:hover { border-color: #60a5fa; color: #60a5fa; }
 </style>
 </head>
 
 <body>
-<!-- ===============================
-     AUTH SECTION
-================================ -->
-<div id="authSection" class="auth-wrapper">
-  <div class="auth-card">
-    <div class="brand">
-      <div class="brand-icon">
-        <i class="fas fa-map-marker-alt" style="color:white;"></i>
+
+<!-- ── BACKGROUND ────────────────────────────────────────────────── -->
+<div class="bg-scene">
+  <div class="bg-grid"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     AUTH PAGE
+══════════════════════════════════════════════════════════════════ -->
+<div id="authSection" class="auth-page">
+
+  <!-- Wordmark -->
+  <div class="site-wordmark">
+    <h1>&#9651; LOCATION TRACKER</h1>
+    <div class="gold-line"></div>
+    <p>Precision · Safety · Intelligence</p>
+  </div>
+
+  <!-- Card -->
+  <div class="auth-card-premium">
+
+    <div class="card-header">
+      <div class="card-icon">
+        <i class="fas fa-location-dot"></i>
       </div>
-      <h2>NexusTracker</h2>
-      <p>Secure real-time location intelligence</p>
+      <h2>SECURE ACCESS</h2>
+      <p>Sign in to your account to continue</p>
     </div>
 
-    <div class="input-group">
+    <!-- Email -->
+    <div class="field">
       <i class="fas fa-envelope"></i>
       <input type="email" id="email" placeholder="Email address" autocomplete="email">
     </div>
-    <div class="input-group">
+
+    <!-- Password -->
+    <div class="field">
       <i class="fas fa-lock"></i>
       <input type="password" id="password" placeholder="Password" autocomplete="current-password">
     </div>
 
-    <!-- Phone fields shown only during signup -->
+    <!-- Phone fields — shown only for signup -->
     <div class="phone-section" id="phoneSection" style="display:none;">
       <div class="phone-section-title">
         <i class="fas fa-shield-halved"></i> Emergency Contacts
       </div>
-      <div class="input-group">
+      <div class="field">
         <i class="fas fa-mobile-alt"></i>
-        <input type="tel" id="userPhone" placeholder="Your phone number (e.g. +919876543210)">
+        <input type="tel" id="userPhone" placeholder="Your phone (e.g. +919876543210)">
       </div>
-      <div class="input-group" style="margin-top:0.6rem;">
+      <div class="field" style="margin-top:0.6rem;">
         <i class="fas fa-user-shield"></i>
-        <input type="tel" id="helperPhone" placeholder="Helper/Guardian phone number">
+        <input type="tel" id="helperPhone" placeholder="Guardian/Helper phone number">
       </div>
       <div class="phone-note">
-        <i class="fas fa-info-circle"></i>
-        Both numbers will receive an SMS with your location when you press EMERGENCY
+        <i class="fas fa-info-circle" style="margin-top:2px;flex-shrink:0;color:var(--gold);"></i>
+        Both numbers receive an SOS SMS with your live location when emergency is triggered
       </div>
     </div>
 
-    <div class="action-buttons">
-      <button class="btn btn-primary" onclick="login()">
-        <i class="fas fa-arrow-right-to-bracket"></i> Login
-      </button>
-      <button class="btn btn-secondary" id="signupBtn" onclick="toggleSignup()">
-        <i class="fas fa-user-plus"></i> Signup
-      </button>
+    <!-- Login / Signup buttons -->
+    <div id="loginBtns">
+      <div class="btn-row">
+        <button class="btn-gold" onclick="login()">
+          <i class="fas fa-arrow-right-to-bracket"></i> Login
+        </button>
+        <button class="btn-outline" onclick="toggleSignup()">
+          <i class="fas fa-user-plus"></i> Signup
+        </button>
+      </div>
     </div>
 
-    <!-- Signup confirm button (shown when signup mode active) -->
-    <div id="signupConfirmDiv" style="display:none; margin-top:0.8rem;">
-      <button class="btn btn-primary" style="width:100%;background:#16a34a;" onclick="signup()">
+    <!-- Create account button — shown only for signup -->
+    <div id="signupConfirmDiv" style="display:none;">
+      <button class="btn-full btn-green" onclick="signup()">
         <i class="fas fa-check"></i> Create Account
       </button>
-      <button class="btn" style="width:100%;margin-top:0.5rem;background:transparent;border:1px solid #334155;color:#94a3b8;" onclick="cancelSignup()">
+      <button class="btn-full btn-ghost" onclick="cancelSignup()">
         Cancel
       </button>
     </div>
 
-    <div id="authResult" class="auth-message">
-      <i class="fas fa-shield-alt"></i> Welcome back, authenticate to continue
+    <div class="auth-msg" id="authResult">
+      <i class="fas fa-shield-alt" style="color:var(--gold);"></i>
+      Authenticate to access your dashboard
     </div>
-  </div>
-</div>
 
-<!-- ===============================
+  </div><!-- /auth-card-premium -->
+
+</div><!-- /authSection -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════
      MAIN APP
-================================ -->
+══════════════════════════════════════════════════════════════════ -->
 <div class="container" id="app" style="display:none;">
   <div class="container">
 
     <h1>📍 Location Tracker</h1>
-    <button class="btn btn-danger" onclick="logout()" style="background-color:#ef4444;color:white;padding:10px 15px;border-radius:8px;border:none;cursor:pointer;">
+    <button class="btn btn-danger" onclick="logout()"
+      style="background:#ef4444;color:white;padding:10px 15px;border-radius:8px;border:none;cursor:pointer;">
       <i class="fas fa-sign-out-alt"></i> Logout
     </button>
 
     <div class="user-section">
-      <label for="userId">
-        <i class="fa fa-user"></i> User ID:
-      </label>
+      <label for="userId"><i class="fa fa-user"></i> User ID:</label>
       <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
-      <button onclick="updateUserId()">
-        <i class="fa fa-sync"></i> Update User
-      </button>
+      <button onclick="updateUserId()"><i class="fa fa-sync"></i> Update User</button>
     </div>
 
     <!-- Emergency Contacts Display -->
-    <div class="contact-panel" id="contactPanel">
+    <div class="contact-panel">
       <span class="contact-panel-label"><i class="fas fa-shield-halved"></i> SOS Contacts:</span>
-      <span class="contact-chip" id="userChip">
+      <span class="contact-chip">
         <i class="fas fa-mobile-alt"></i>
         <span id="userPhoneDisplay">Not set</span>
       </span>
-      <span class="contact-chip" id="helperChip">
+      <span class="contact-chip">
         <i class="fas fa-user-shield"></i>
         <span id="helperPhoneDisplay">Not set</span>
       </span>
@@ -253,12 +610,8 @@
         <option value="CGEC">CGEC</option>
       </select>
       <div class="college-btn-group">
-        <button class="college-btn active" id="btn-JGEC" onclick="selectCollege('JGEC')" title="Jalpaiguri Government Engineering College">
-          🏛️ JGEC
-        </button>
-        <button class="college-btn" id="btn-CGEC" onclick="selectCollege('CGEC')" title="Cooch Behar Government Engineering College">
-          🏛️ CGEC
-        </button>
+        <button class="college-btn active" id="btn-JGEC" onclick="selectCollege('JGEC')" title="Jalpaiguri Government Engineering College">🏛️ JGEC</button>
+        <button class="college-btn" id="btn-CGEC" onclick="selectCollege('CGEC')" title="Cooch Behar Government Engineering College">🏛️ CGEC</button>
       </div>
       <div class="college-badge">
         <i class="fas fa-location-dot"></i> Geofence: <span id="activeCampusLabel">JGEC</span>
@@ -270,11 +623,8 @@
       <p id="currentLocation"><i class="fa fa-map-marker-alt"></i> No location data yet</p>
     </div>
 
-    <!-- Controls -->
     <div class="controls">
-      <button onclick="startTracking()" id="startBtn">
-        <i class="fa fa-play"></i> Start Tracking
-      </button>
+      <button onclick="startTracking()" id="startBtn"><i class="fa fa-play"></i> Start Tracking</button>
       <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
         <i class="fa fa-exclamation-triangle"></i> EMERGENCY
       </button>
@@ -287,9 +637,7 @@
     </div>
 
     <div class="navigation">
-      <a href="view_path.html" class="nav-link">
-        <i class="fa fa-route"></i> View User Paths →
-      </a>
+      <a href="view_path.html" class="nav-link"><i class="fa fa-route"></i> View User Paths →</a>
     </div>
 
     <div class="map-container">
@@ -305,176 +653,144 @@
 <script src="js/map.js"></script>
 <script src="js/tracking.js"></script>
 <script>
-// ===============================
-// COLLEGE SELECTOR LOGIC
-// ===============================
+// ── COLLEGE SELECTOR ─────────────────────────────────────────────
 function selectCollege(college) {
-    document.getElementById('collegeSelect').value = college;
-    document.querySelectorAll('.college-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('btn-' + college).classList.add('active');
-    document.getElementById('activeCampusLabel').textContent = college;
-    if (window.trackingMap) window.trackingMap.setGeofence(college);
+  document.getElementById('collegeSelect').value = college;
+  document.querySelectorAll('.college-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + college).classList.add('active');
+  document.getElementById('activeCampusLabel').textContent = college;
+  if (window.trackingMap) window.trackingMap.setGeofence(college);
 }
 
-// ===============================
-// SIGNUP TOGGLE
-// ===============================
+// ── SIGNUP TOGGLE ─────────────────────────────────────────────────
 let signupMode = false;
 
 function toggleSignup() {
-    signupMode = true;
-    document.getElementById('phoneSection').style.display = 'block';
-    document.getElementById('signupConfirmDiv').style.display = 'block';
-    document.getElementById('signupBtn').style.display = 'none';
-    document.querySelector('.btn-primary').style.display = 'none'; // hide login btn
+  signupMode = true;
+  document.getElementById('phoneSection').style.display = 'block';
+  document.getElementById('signupConfirmDiv').style.display = 'block';
+  document.getElementById('loginBtns').style.display = 'none';
 }
-
 function cancelSignup() {
-    signupMode = false;
-    document.getElementById('phoneSection').style.display = 'none';
-    document.getElementById('signupConfirmDiv').style.display = 'none';
-    document.getElementById('signupBtn').style.display = '';
-    document.querySelector('.btn-primary').style.display = '';
+  signupMode = false;
+  document.getElementById('phoneSection').style.display = 'none';
+  document.getElementById('signupConfirmDiv').style.display = 'none';
+  document.getElementById('loginBtns').style.display = 'block';
 }
 
-// ===============================
-// SIGNUP
-// ===============================
+// ── SIGNUP ────────────────────────────────────────────────────────
 async function signup() {
-    const email      = document.getElementById("email").value.trim();
-    const password   = document.getElementById("password").value;
-    const userPhone  = document.getElementById("userPhone").value.trim();
-    const helperPhone= document.getElementById("helperPhone").value.trim();
+  const email       = document.getElementById("email").value.trim();
+  const password    = document.getElementById("password").value;
+  const userPhone   = document.getElementById("userPhone").value.trim();
+  const helperPhone = document.getElementById("helperPhone").value.trim();
 
-    if (!email || !password) { alert("Please enter email and password"); return; }
-    if (!userPhone)          { alert("Please enter your phone number"); return; }
-    if (!helperPhone)        { alert("Please enter a helper/guardian phone number"); return; }
+  if (!email || !password) { alert("Please enter email and password"); return; }
+  if (!userPhone)           { alert("Please enter your phone number"); return; }
+  if (!helperPhone)         { alert("Please enter a guardian/helper phone number"); return; }
 
-    try {
-        const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/signup", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
+  try {
+    const res  = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
 
-        if (data.status === "success") {
-            localStorage.setItem("supabase_session", JSON.stringify(data.session));
-            localStorage.setItem("user_id", data.user.id);
-            localStorage.setItem("user_phone",   userPhone);
-            localStorage.setItem("helper_phone", helperPhone);
-
-            alert("Account created successfully!");
-            showApp();
-            resetIdleTimer();
-        } else {
-            alert("Signup failed: " + (data.detail || "User might already exist"));
-        }
-    } catch (error) {
-        document.getElementById("authResult").innerText = "Error: " + error.message;
+    if (data.status === "success") {
+      localStorage.setItem("supabase_session", JSON.stringify(data.session));
+      localStorage.setItem("user_id",       data.user.id);
+      localStorage.setItem("user_phone",    userPhone);
+      localStorage.setItem("helper_phone",  helperPhone);
+      alert("Account created successfully!");
+      showApp();
+      resetIdleTimer();
+    } else {
+      alert("Signup failed: " + (data.detail || "User might already exist"));
     }
+  } catch (err) {
+    document.getElementById("authResult").innerText = "Error: " + err.message;
+  }
 }
 
-// ===============================
-// LOGIN
-// ===============================
+// ── LOGIN ─────────────────────────────────────────────────────────
 async function login() {
-    const email    = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    try {
-        const res = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/login", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-
-        if (data.status === "success") {
-            localStorage.setItem("supabase_session", JSON.stringify(data.session));
-            localStorage.setItem("user_id", data.user.id);
-            showApp();
-            resetIdleTimer();
-        } else {
-            alert("Login failed: " + data.detail);
-        }
-    } catch (error) {
-        document.getElementById("authResult").innerText = "Error: " + error.message;
+  const email    = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  try {
+    const res  = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      localStorage.setItem("supabase_session", JSON.stringify(data.session));
+      localStorage.setItem("user_id", data.user.id);
+      showApp();
+      resetIdleTimer();
+    } else {
+      alert("Login failed: " + data.detail);
     }
+  } catch (err) {
+    document.getElementById("authResult").innerText = "Error: " + err.message;
+  }
 }
 
 function logout() {
-    localStorage.removeItem("supabase_session");
-    localStorage.removeItem("user_id");
-    // Keep phones saved so user doesn't re-enter after login
-    location.reload();
+  localStorage.removeItem("supabase_session");
+  localStorage.removeItem("user_id");
+  location.reload();
 }
 
-// ===============================
-// SHOW APP
-// ===============================
+// ── SHOW APP ──────────────────────────────────────────────────────
 function showApp() {
-    document.getElementById("authSection").style.display = "none";
-    document.getElementById("app").style.display = "block";
-
-    if (!window.trackingMap) {
-        window.trackingMap = new MapManager('map');
-    } else {
-        window.trackingMap.map.invalidateSize();
-    }
-
-    const savedId = localStorage.getItem("user_id");
-    if (savedId) {
-        document.getElementById("userId").value = savedId;
-        if (typeof currentUser !== 'undefined') currentUser = savedId;
-    }
-
-    // Show saved phone numbers
-    updateContactDisplay();
+  document.getElementById("authSection").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  if (!window.trackingMap) {
+    window.trackingMap = new MapManager('map');
+  } else {
+    window.trackingMap.map.invalidateSize();
+  }
+  const savedId = localStorage.getItem("user_id");
+  if (savedId) {
+    document.getElementById("userId").value = savedId;
+    if (typeof currentUser !== 'undefined') currentUser = savedId;
+  }
+  updateContactDisplay();
 }
 
-// ===============================
-// CONTACT DISPLAY
-// ===============================
+// ── CONTACT DISPLAY ───────────────────────────────────────────────
 function updateContactDisplay() {
-    const uPhone = localStorage.getItem("user_phone")   || "Not set";
-    const hPhone = localStorage.getItem("helper_phone") || "Not set";
-    document.getElementById("userPhoneDisplay").textContent   = uPhone;
-    document.getElementById("helperPhoneDisplay").textContent = hPhone;
+  document.getElementById("userPhoneDisplay").textContent   = localStorage.getItem("user_phone")   || "Not set";
+  document.getElementById("helperPhoneDisplay").textContent = localStorage.getItem("helper_phone") || "Not set";
 }
 
 function editContacts() {
-    const uPhone = prompt("Your phone number:", localStorage.getItem("user_phone") || "");
-    if (uPhone === null) return;
-    const hPhone = prompt("Helper/Guardian phone number:", localStorage.getItem("helper_phone") || "");
-    if (hPhone === null) return;
-
-    if (uPhone) localStorage.setItem("user_phone", uPhone);
-    if (hPhone) localStorage.setItem("helper_phone", hPhone);
-    updateContactDisplay();
-    alert("Contacts updated!");
+  const uPhone = prompt("Your phone number:", localStorage.getItem("user_phone") || "");
+  if (uPhone === null) return;
+  const hPhone = prompt("Helper/Guardian phone number:", localStorage.getItem("helper_phone") || "");
+  if (hPhone === null) return;
+  if (uPhone) localStorage.setItem("user_phone",   uPhone);
+  if (hPhone) localStorage.setItem("helper_phone", hPhone);
+  updateContactDisplay();
+  alert("Contacts updated!");
 }
 
-// ===============================
-// INACTIVITY
-// ===============================
+// ── INACTIVITY ────────────────────────────────────────────────────
 const INACTIVITY_LIMIT = 5 * 60 * 1000;
 let idleTimer;
-
 function resetIdleTimer() {
-    if (!localStorage.getItem("supabase_session")) return;
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-        alert("You have been logged out due to 5 minutes of inactivity.");
-        logout();
-    }, INACTIVITY_LIMIT);
+  if (!localStorage.getItem("supabase_session")) return;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    alert("You have been logged out due to 5 minutes of inactivity.");
+    logout();
+  }, INACTIVITY_LIMIT);
 }
-
 window.onload = () => {
-    const session = localStorage.getItem("supabase_session");
-    if (session) { showApp(); resetIdleTimer(); }
+  if (localStorage.getItem("supabase_session")) { showApp(); resetIdleTimer(); }
 };
-
 window.onmousemove  = resetIdleTimer;
 window.onmousedown  = resetIdleTimer;
 window.ontouchstart = resetIdleTimer;
