@@ -1,632 +1,801 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>TRACK-ME | Smart Location Tracker</title>
-
+<title>Location Tracker</title>
+<link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
+/* ── RESET & BASE ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* =========================
-   RESET
-========================= */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+:root {
+  --gold:        #c9a84c;
+  --gold-light:  #e8c97a;
+  --gold-dim:    rgba(201,168,76,0.15);
+  --gold-border: rgba(201,168,76,0.3);
+  --bg:          #060810;
+  --bg2:         #0d1117;
+  --bg3:         #111827;
+  --surface:     rgba(13,17,23,0.92);
+  --text:        #e8e6e1;
+  --text-muted:  #7a8394;
+  --red:         #e05252;
+  --green:       #3ecf8e;
+  --blue:        #4f8ef7;
+  --radius:      14px;
 }
 
-:root{
-    --gold:#c9a84c;
-    --gold-light:#f5d77c;
-    --bg:#050816;
-    --card:#0f172a;
-    --text:#f1f5f9;
-    --muted:#94a3b8;
-    --blue:#3b82f6;
-    --green:#3ecf8e;
-    --red:#ef4444;
+html, body {
+  height: 100%;
+  font-family: 'Raleway', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
 }
 
-body{
-    font-family:'Raleway',sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    overflow-x:hidden;
+/* ── ANIMATED BACKGROUND ──────────────────────────────────────────── */
+.bg-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-/* =========================
-   BACKGROUND
-========================= */
-
-.bg-scene{
-    position:fixed;
-    inset:0;
-    z-index:-1;
-    overflow:hidden;
+/* Star field */
+.bg-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 40% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 75%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 55%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 95%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,0.5) 0%, transparent 100%);
 }
 
-.bg-grid{
-    position:absolute;
-    inset:0;
-
-    background-image:
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-
-    background-size:60px 60px;
+/* Radial glow orbs */
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: orbFloat 12s ease-in-out infinite alternate;
+}
+.bg-orb-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+  top: -100px; left: -100px;
+  animation-delay: 0s;
+}
+.bg-orb-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(79,142,247,0.07) 0%, transparent 70%);
+  bottom: -80px; right: -80px;
+  animation-delay: -5s;
+}
+.bg-orb-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -8s;
 }
 
-.orb{
-    position:absolute;
-    border-radius:50%;
-    filter:blur(80px);
-    animation:float 10s infinite alternate;
+/* Grid overlay */
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
-.orb1{
-    width:500px;
-    height:500px;
-    background:rgba(201,168,76,0.12);
-    top:-150px;
-    left:-100px;
+@keyframes orbFloat {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(30px, 20px) scale(1.1); }
 }
 
-.orb2{
-    width:400px;
-    height:400px;
-    background:rgba(59,130,246,0.10);
-    bottom:-100px;
-    right:-100px;
+/* ── AUTH PAGE LAYOUT ─────────────────────────────────────────────── */
+.auth-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
 }
 
-@keyframes float{
-    from{
-        transform:translateY(0px);
-    }
-    to{
-        transform:translateY(40px);
-    }
+/* Site wordmark above the card */
+.site-wordmark {
+  text-align: center;
+  margin-bottom: 2.2rem;
+  animation: fadeDown 0.7s ease both;
+}
+.site-wordmark h1 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  text-shadow: 0 0 40px rgba(201,168,76,0.4);
+}
+.site-wordmark p {
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
 }
 
-/* =========================
-   AUTH PAGE
-========================= */
-
-.auth-page{
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    padding:20px;
+/* Gold divider line */
+.gold-line {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 0.7rem auto 0;
 }
 
-.auth-card{
-    width:100%;
-    max-width:420px;
-
-    background:rgba(15,23,42,0.82);
-
-    border:1px solid rgba(255,255,255,0.06);
-
-    border-radius:28px;
-
-    backdrop-filter:blur(18px);
-
-    padding:40px;
-
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.5),
-        inset 0 0 0 1px rgba(255,255,255,0.03);
+/* ── AUTH CARD ────────────────────────────────────────────────────── */
+.auth-card-premium {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--gold-border);
+  border-radius: 20px;
+  padding: 2.4rem 2rem;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(201,168,76,0.05),
+    0 20px 60px rgba(0,0,0,0.6),
+    0 0 80px rgba(201,168,76,0.05) inset;
+  animation: fadeUp 0.7s ease 0.15s both;
+  position: relative;
+  overflow: hidden;
 }
 
-.logo{
-    text-align:center;
-    margin-bottom:35px;
+/* Corner accent */
+.auth-card-premium::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle at top left, rgba(201,168,76,0.08), transparent 70%);
+  pointer-events: none;
+}
+.auth-card-premium::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 100px; height: 100px;
+  background: radial-gradient(circle at bottom right, rgba(79,142,247,0.06), transparent 70%);
+  pointer-events: none;
 }
 
-.logo h1{
-    font-family:'Cinzel',serif;
-    color:var(--gold);
-    font-size:2.3rem;
-    letter-spacing:0.18em;
+/* Icon + title inside card */
+.card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.card-icon {
+  width: 58px; height: 58px;
+  background: linear-gradient(135deg, var(--gold) 0%, #8b6914 100%);
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #000;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 24px rgba(201,168,76,0.3);
+}
+.card-header h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+.card-header p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  letter-spacing: 0.05em;
 }
 
-.logo p{
-    margin-top:10px;
-    color:var(--muted);
-    letter-spacing:0.08em;
+/* ── INPUTS ───────────────────────────────────────────────────────── */
+.field {
+  position: relative;
+  margin-bottom: 1rem;
+}
+.field i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+  font-size: 0.85rem;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+.field input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.6rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.field input::placeholder { color: #4a5568; }
+.field input:focus {
+  border-color: var(--gold-border);
+  background: rgba(201,168,76,0.04);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.08);
+}
+.field input:focus + i,
+.field i:has(+ input:focus) { color: var(--gold-light); }
+
+/* ── PHONE SECTION ────────────────────────────────────────────────── */
+.phone-section {
+  margin: 1rem 0;
+  padding: 1.1rem;
+  background: rgba(201,168,76,0.04);
+  border: 1px solid var(--gold-border);
+  border-radius: 12px;
+}
+.phone-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.phone-note {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.6rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  line-height: 1.5;
 }
 
-/* =========================
-   INPUTS
-========================= */
-
-.field{
-    position:relative;
-    margin-bottom:20px;
+/* ── BUTTONS ──────────────────────────────────────────────────────── */
+.btn-row {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+.btn-gold {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, var(--gold) 0%, #a07820 100%);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.3);
+  transform: translateY(-1px);
+}
+.btn-outline {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  color: var(--gold);
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+}
+.btn-outline:hover {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.1);
+  transform: translateY(-1px);
+}
+.btn-full {
+  width: 100%;
+  margin-top: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.btn-green {
+  background: linear-gradient(135deg, #3ecf8e 0%, #1a8f5e 100%);
+  border: none;
+  color: #000;
+}
+.btn-green:hover {
+  box-shadow: 0 8px 24px rgba(62,207,142,0.3);
+  transform: translateY(-1px);
+}
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-muted);
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
 }
 
-.field input{
-    width:100%;
-    padding:16px 18px 16px 50px;
-
-    background:rgba(255,255,255,0.04);
-
-    border:1px solid rgba(255,255,255,0.06);
-
-    border-radius:14px;
-
-    color:white;
-
-    outline:none;
-
-    transition:0.3s;
+/* Auth message */
+.auth-msg {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
-.field input:focus{
-    border-color:var(--gold);
-    box-shadow:0 0 0 4px rgba(201,168,76,0.10);
+/* ── ANIMATIONS ───────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
 }
 
-.field i{
-    position:absolute;
-    left:18px;
-    top:50%;
-    transform:translateY(-50%);
-    color:var(--gold);
+/* ── APP SECTION ──────────────────────────────────────────────────── */
+#app {
+  position: relative;
+  z-index: 1;
 }
 
-/* =========================
-   BUTTONS
-========================= */
-
-.btn{
-    width:100%;
-    padding:16px;
-
-    border:none;
-    border-radius:14px;
-
-    font-weight:700;
-    cursor:pointer;
-
-    transition:0.3s;
-
-    font-size:0.95rem;
+/* ── COLLEGE SELECTOR ─────────────────────────────────────────────── */
+.college-selector-wrapper {
+  margin: 1rem 0;
+  padding: 1rem 1.2rem;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
-
-.btn:hover{
-    transform:translateY(-2px);
+.college-selector-wrapper label {
+  font-size: 0.9rem; font-weight: 600; color: #94a3b8;
+  white-space: nowrap; display: flex; align-items: center; gap: 0.4rem;
 }
-
-.btn-login{
-    background:linear-gradient(135deg,var(--gold),#9c7b1f);
-    color:black;
+.college-btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.college-btn {
+  padding: 0.45rem 1.1rem; border-radius: 8px;
+  border: 2px solid #334155; background: #1e293b;
+  color: #94a3b8; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.03em;
 }
-
-.btn-signup{
-    background:transparent;
-    border:1px solid rgba(255,255,255,0.08);
-    color:white;
-    margin-top:14px;
+.college-btn:hover { border-color: #60a5fa; color: #60a5fa; background: #1e3a5f; }
+.college-btn.active {
+  background: #2563eb; border-color: #3b82f6; color: #fff;
+  box-shadow: 0 0 12px rgba(59,130,246,0.4);
 }
-
-/* =========================
-   APP
-========================= */
-
-.dashboard{
-    padding:30px;
+#collegeSelect { display: none; }
+.college-badge {
+  margin-left: auto; font-size: 0.75rem; color: #64748b;
+  display: flex; align-items: center; gap: 0.3rem;
 }
+.college-badge span { color: #3b82f6; font-weight: 700; }
 
-.dashboard-container{
-    max-width:1400px;
-    margin:auto;
-
-    background:rgba(15,23,42,0.78);
-
-    border-radius:30px;
-
-    padding:30px;
-
-    border:1px solid rgba(255,255,255,0.05);
-
-    backdrop-filter:blur(18px);
-
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.5);
+/* ── CONTACT PANEL ────────────────────────────────────────────────── */
+.contact-panel {
+  margin: 0.8rem 0;
+  padding: 0.9rem 1.1rem;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
 }
-
-/* =========================
-   HEADER
-========================= */
-
-.dashboard-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    flex-wrap:wrap;
-    gap:20px;
-
-    margin-bottom:30px;
+.contact-panel-label {
+  font-size: 0.82rem; color: #94a3b8; font-weight: 600;
+  display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;
 }
-
-.dashboard-header h1{
-    font-family:'Cinzel',serif;
-    color:var(--gold);
-    font-size:2.5rem;
-    letter-spacing:0.15em;
+.contact-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 20px; padding: 0.3rem 0.8rem;
+  font-size: 0.8rem; color: #e2e8f0;
 }
-
-.dashboard-header p{
-    color:var(--muted);
-    margin-top:8px;
+.contact-chip i { color: #3b82f6; font-size: 0.75rem; }
+.edit-contacts-btn {
+  margin-left: auto; background: none; border: 1px solid #334155;
+  border-radius: 8px; color: #64748b; font-size: 0.75rem;
+  padding: 0.3rem 0.7rem; cursor: pointer; transition: all 0.2s;
 }
-
-.status-badge{
-    display:flex;
-    align-items:center;
-    gap:10px;
-
-    padding:14px 20px;
-
-    background:rgba(62,207,142,0.08);
-
-    border:1px solid rgba(62,207,142,0.2);
-
-    border-radius:16px;
-
-    color:var(--green);
-
-    font-weight:700;
-}
-
-.pulse{
-    width:10px;
-    height:10px;
-    border-radius:50%;
-    background:var(--green);
-
-    animation:pulse 1.5s infinite;
-}
-
-@keyframes pulse{
-    0%{
-        transform:scale(1);
-        opacity:1;
-    }
-
-    100%{
-        transform:scale(2.5);
-        opacity:0;
-    }
-}
-
-/* =========================
-   GRID
-========================= */
-
-.grid{
-    display:grid;
-
-    grid-template-columns:
-    repeat(auto-fit,minmax(320px,1fr));
-
-    gap:22px;
-
-    margin-bottom:30px;
-}
-
-.card{
-    background:rgba(15,23,42,0.9);
-
-    border:1px solid rgba(255,255,255,0.05);
-
-    border-radius:24px;
-
-    padding:24px;
-
-    transition:0.3s;
-}
-
-.card:hover{
-    transform:translateY(-4px);
-
-    border-color:rgba(201,168,76,0.3);
-
-    box-shadow:0 15px 40px rgba(0,0,0,0.3);
-}
-
-.card h3{
-    margin-bottom:18px;
-    color:var(--gold);
-}
-
-/* =========================
-   CONTROLS
-========================= */
-
-.controls{
-    display:flex;
-    flex-wrap:wrap;
-    gap:14px;
-}
-
-.controls button{
-    flex:1;
-    min-width:180px;
-
-    padding:15px;
-
-    border:none;
-
-    border-radius:14px;
-
-    font-weight:700;
-
-    cursor:pointer;
-
-    transition:0.3s;
-}
-
-.controls button:hover{
-    transform:translateY(-2px);
-}
-
-.start-btn{
-    background:linear-gradient(135deg,#22c55e,#15803d);
-    color:white;
-}
-
-.stop-btn{
-    background:#475569;
-    color:white;
-}
-
-.emergency-btn{
-    background:linear-gradient(135deg,#ef4444,#991b1b);
-
-    color:white;
-
-    animation:emergencyGlow 2s infinite alternate;
-}
-
-@keyframes emergencyGlow{
-    from{
-        box-shadow:0 0 15px rgba(239,68,68,0.4);
-    }
-
-    to{
-        box-shadow:0 0 35px rgba(239,68,68,0.9);
-    }
-}
-
-/* =========================
-   MAP
-========================= */
-
-.map-container{
-    position:relative;
-
-    overflow:hidden;
-
-    border-radius:28px;
-
-    border:1px solid rgba(255,255,255,0.05);
-
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.5);
-}
-
-#map{
-    width:100%;
-    height:650px;
-}
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media(max-width:768px){
-
-    .dashboard{
-        padding:15px;
-    }
-
-    .dashboard-header{
-        flex-direction:column;
-        align-items:flex-start;
-    }
-
-    .dashboard-header h1{
-        font-size:1.8rem;
-    }
-
-    .controls{
-        flex-direction:column;
-    }
-
-    #map{
-        height:450px;
-    }
-}
-
+.edit-contacts-btn:hover { border-color: #60a5fa; color: #60a5fa; }
 </style>
 </head>
 
 <body>
 
-<!-- BACKGROUND -->
+<!-- ── BACKGROUND ────────────────────────────────────────────────── -->
 <div class="bg-scene">
-    <div class="bg-grid"></div>
-
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
 </div>
 
-<!-- AUTH -->
-<div class="auth-page" id="authSection">
+<!-- ══════════════════════════════════════════════════════════════════
+     AUTH PAGE
+══════════════════════════════════════════════════════════════════ -->
+<div id="authSection" class="auth-page">
 
-    <div class="auth-card">
+  <!-- Wordmark -->
+  <div class="site-wordmark">
+    <h1>&#9651; LOCATION TRACKER</h1>
+    <div class="gold-line"></div>
+    <p>Precision · Safety · Intelligence</p>
+  </div>
 
-        <div class="logo">
-            <h1>TRACK-ME</h1>
-            <p>Smart Geofence Tracking Platform</p>
-        </div>
+  <!-- Card -->
+  <div class="auth-card-premium">
 
-        <div class="field">
-            <i class="fas fa-envelope"></i>
-            <input type="email" placeholder="Email Address">
-        </div>
+    <div class="card-header">
+      <div class="card-icon">
+        <i class="fas fa-location-dot"></i>
+      </div>
+      <h2>SECURE ACCESS</h2>
+      <p>Sign in to your account to continue</p>
+    </div>
 
-        <div class="field">
-            <i class="fas fa-lock"></i>
-            <input type="password" placeholder="Password">
-        </div>
+    <!-- Email -->
+    <div class="field">
+      <i class="fas fa-envelope"></i>
+      <input type="email" id="email" placeholder="Email address" autocomplete="email">
+    </div>
 
-        <button class="btn btn-login">
-            <i class="fas fa-right-to-bracket"></i>
-            Login
+    <!-- Password -->
+    <div class="field">
+      <i class="fas fa-lock"></i>
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+    </div>
+
+    <!-- Phone fields — shown only for signup -->
+    <div class="phone-section" id="phoneSection" style="display:none;">
+      <div class="phone-section-title">
+        <i class="fas fa-shield-halved"></i> Emergency Contacts
+      </div>
+      <div class="field">
+        <i class="fas fa-mobile-alt"></i>
+        <input type="tel" id="userPhone" placeholder="Your phone (e.g. +919876543210)">
+      </div>
+      <div class="field" style="margin-top:0.6rem;">
+        <i class="fas fa-user-shield"></i>
+        <input type="tel" id="helperPhone" placeholder="Guardian/Helper phone number">
+      </div>
+      <div class="phone-note">
+        <i class="fas fa-info-circle" style="margin-top:2px;flex-shrink:0;color:var(--gold);"></i>
+        Both numbers receive an SOS SMS with your live location when emergency is triggered
+      </div>
+    </div>
+
+    <!-- Login / Signup buttons -->
+    <div id="loginBtns">
+      <div class="btn-row">
+        <button class="btn-gold" onclick="login()">
+          <i class="fas fa-arrow-right-to-bracket"></i> Login
         </button>
-
-        <button class="btn btn-signup">
-            <i class="fas fa-user-plus"></i>
-            Signup
+        <button class="btn-outline" onclick="toggleSignup()">
+          <i class="fas fa-user-plus"></i> Signup
         </button>
-
+      </div>
     </div>
 
-</div>
-
-<!-- DASHBOARD -->
-<div class="dashboard" id="app">
-
-<div class="dashboard-container">
-
-    <!-- HEADER -->
-    <div class="dashboard-header">
-
-        <div>
-            <h1>TRACK-ME</h1>
-            <p>Real-Time Emergency & Geofence Monitoring System</p>
-        </div>
-
-        <div class="status-badge">
-            <span class="pulse"></span>
-            SYSTEM ACTIVE
-        </div>
-
+    <!-- Create account button — shown only for signup -->
+    <div id="signupConfirmDiv" style="display:none;">
+      <button class="btn-full btn-green" onclick="signup()">
+        <i class="fas fa-check"></i> Create Account
+      </button>
+      <button class="btn-full btn-ghost" onclick="cancelSignup()">
+        Cancel
+      </button>
     </div>
 
-    <!-- GRID -->
-    <div class="grid">
-
-        <!-- USER -->
-        <div class="card">
-            <h3><i class="fas fa-user"></i> User</h3>
-
-            <div class="field">
-                <i class="fas fa-id-card"></i>
-                <input type="text" value="user101">
-            </div>
-
-            <button class="btn btn-login">
-                Update User
-            </button>
-        </div>
-
-        <!-- CONTACT -->
-        <div class="card">
-
-            <h3><i class="fas fa-shield-halved"></i> Emergency Contacts</h3>
-
-            <p>📱 +91 9876543210</p>
-            <br>
-            <p>🛡️ +91 9123456780</p>
-
-        </div>
-
-        <!-- CAMPUS -->
-        <div class="card">
-
-            <h3><i class="fas fa-university"></i> Campus</h3>
-
-            <div class="controls">
-
-                <button class="btn-login btn">
-                    JGEC
-                </button>
-
-                <button class="btn-signup btn">
-                    CGEC
-                </button>
-
-            </div>
-
-        </div>
-
+    <div class="auth-msg" id="authResult">
+      <i class="fas fa-shield-alt" style="color:var(--gold);"></i>
+      Authenticate to access your dashboard
     </div>
 
-    <!-- CONTROLS -->
-    <div class="card">
+  </div><!-- /auth-card-premium -->
 
-        <h3><i class="fas fa-satellite-dish"></i> Tracking Controls</h3>
+</div><!-- /authSection -->
 
-        <div class="controls">
 
-            <button class="start-btn">
-                ▶ Start Tracking
-            </button>
+<!-- ══════════════════════════════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════════════════════════════ -->
+<div class="container" id="app" style="display:none;">
+  <div class="container">
 
-            <button class="emergency-btn">
-                🚨 EMERGENCY
-            </button>
+    <h1>📍 Location Tracker</h1>
+    <button class="btn btn-danger" onclick="logout()"
+      style="background:#ef4444;color:white;padding:10px 15px;border-radius:8px;border:none;cursor:pointer;">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
 
-            <button class="stop-btn">
-                ⛔ Stop
-            </button>
-
-        </div>
-
+    <div class="user-section">
+      <label for="userId"><i class="fa fa-user"></i> User ID:</label>
+      <input type="text" id="userId" placeholder="Enter your user ID" value="user101">
+      <button onclick="updateUserId()"><i class="fa fa-sync"></i> Update User</button>
     </div>
 
-    <br>
+    <!-- Emergency Contacts Display -->
+    <div class="contact-panel">
+      <span class="contact-panel-label"><i class="fas fa-shield-halved"></i> SOS Contacts:</span>
+      <span class="contact-chip">
+        <i class="fas fa-mobile-alt"></i>
+        <span id="userPhoneDisplay">Not set</span>
+      </span>
+      <span class="contact-chip">
+        <i class="fas fa-user-shield"></i>
+        <span id="helperPhoneDisplay">Not set</span>
+      </span>
+      <button class="edit-contacts-btn" onclick="editContacts()">
+        <i class="fas fa-pen"></i> Edit
+      </button>
+    </div>
 
-    <!-- MAP -->
+    <!-- College Selector -->
+    <div class="college-selector-wrapper">
+      <label><i class="fas fa-university"></i> Select Campus:</label>
+      <select id="collegeSelect">
+        <option value="JGEC">JGEC</option>
+        <option value="CGEC">CGEC</option>
+      </select>
+      <div class="college-btn-group">
+        <button class="college-btn active" id="btn-JGEC" onclick="selectCollege('JGEC')" title="Jalpaiguri Government Engineering College">🏛️ JGEC</button>
+        <button class="college-btn" id="btn-CGEC" onclick="selectCollege('CGEC')" title="Cooch Behar Government Engineering College">🏛️ CGEC</button>
+      </div>
+      <div class="college-badge">
+        <i class="fas fa-location-dot"></i> Geofence: <span id="activeCampusLabel">JGEC</span>
+      </div>
+    </div>
+
+    <div class="status">
+      <p id="status"><i class="fa fa-info-circle"></i> Ready to track location...</p>
+      <p id="currentLocation"><i class="fa fa-map-marker-alt"></i> No location data yet</p>
+    </div>
+
+    <div class="controls">
+      <button onclick="startTracking()" id="startBtn"><i class="fa fa-play"></i> Start Tracking</button>
+      <button onclick="triggerEmergency()" id="emergencyBtn" class="btn-emergency">
+        <i class="fa fa-exclamation-triangle"></i> EMERGENCY
+      </button>
+      <button onclick="stopEmergency()" id="stopEmergencyBtn" disabled style="background-color:#6b7280;">
+        <i class="fa fa-ban"></i> Stop Emergency
+      </button>
+      <button onclick="stopTracking()" id="stopBtn" disabled>
+        <i class="fa fa-stop"></i> Stop Tracking
+      </button>
+    </div>
+
+    <div class="navigation">
+      <a href="view_path.html" class="nav-link"><i class="fa fa-route"></i> View User Paths →</a>
+    </div>
+
     <div class="map-container">
-        <div id="map"></div>
+      <div id="map"></div>
+      <button class="fullscreen-btn" onclick="toggleFullscreenMap()">⛶</button>
     </div>
 
-</div>
-
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+<script src="js/map.js"></script>
+<script src="js/tracking.js"></script>
 <script>
+// ── COLLEGE SELECTOR ─────────────────────────────────────────────
+function selectCollege(college) {
+  document.getElementById('collegeSelect').value = college;
+  document.querySelectorAll('.college-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + college).classList.add('active');
+  document.getElementById('activeCampusLabel').textContent = college;
+  if (window.trackingMap) window.trackingMap.setGeofence(college);
+}
 
-const map = L.map('map').setView([26.5215, 88.7195], 15);
+// ── SIGNUP TOGGLE ─────────────────────────────────────────────────
+let signupMode = false;
 
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
-    attribution:'© OpenStreetMap contributors'
-}).addTo(map);
+function toggleSignup() {
+  signupMode = true;
+  document.getElementById('phoneSection').style.display = 'block';
+  document.getElementById('signupConfirmDiv').style.display = 'block';
+  document.getElementById('loginBtns').style.display = 'none';
+}
+function cancelSignup() {
+  signupMode = false;
+  document.getElementById('phoneSection').style.display = 'none';
+  document.getElementById('signupConfirmDiv').style.display = 'none';
+  document.getElementById('loginBtns').style.display = 'block';
+}
 
-L.marker([26.5215,88.7195])
-.addTo(map)
-.bindPopup("Current Location")
-.openPopup();
+// ── SIGNUP ────────────────────────────────────────────────────────
+async function signup() {
+  const email       = document.getElementById("email").value.trim();
+  const password    = document.getElementById("password").value;
+  const userPhone   = document.getElementById("userPhone").value.trim();
+  const helperPhone = document.getElementById("helperPhone").value.trim();
 
+  if (!email || !password) { alert("Please enter email and password"); return; }
+  if (!userPhone)           { alert("Please enter your phone number"); return; }
+  if (!helperPhone)         { alert("Please enter a guardian/helper phone number"); return; }
+
+  try {
+    const res  = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.status === "success") {
+      localStorage.setItem("supabase_session", JSON.stringify(data.session));
+      localStorage.setItem("user_id",       data.user.id);
+      localStorage.setItem("user_phone",    userPhone);
+      localStorage.setItem("helper_phone",  helperPhone);
+      alert("Account created successfully!");
+      showApp();
+      resetIdleTimer();
+    } else {
+      alert("Signup failed: " + (data.detail || "User might already exist"));
+    }
+  } catch (err) {
+    document.getElementById("authResult").innerText = "Error: " + err.message;
+  }
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────
+async function login() {
+  const email    = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  try {
+    const res  = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      localStorage.setItem("supabase_session", JSON.stringify(data.session));
+      localStorage.setItem("user_id", data.user.id);
+      showApp();
+      resetIdleTimer();
+    } else {
+      alert("Login failed: " + data.detail);
+    }
+  } catch (err) {
+    document.getElementById("authResult").innerText = "Error: " + err.message;
+  }
+}
+
+function logout() {
+  localStorage.removeItem("supabase_session");
+  localStorage.removeItem("user_id");
+  location.reload();
+}
+
+// ── SHOW APP ──────────────────────────────────────────────────────
+function showApp() {
+  document.getElementById("authSection").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  if (!window.trackingMap) {
+    window.trackingMap = new MapManager('map');
+  } else {
+    window.trackingMap.map.invalidateSize();
+  }
+  const savedId = localStorage.getItem("user_id");
+  if (savedId) {
+    document.getElementById("userId").value = savedId;
+    if (typeof currentUser !== 'undefined') currentUser = savedId;
+  }
+  updateContactDisplay();
+}
+
+// ── CONTACT DISPLAY ───────────────────────────────────────────────
+function updateContactDisplay() {
+  document.getElementById("userPhoneDisplay").textContent   = localStorage.getItem("user_phone")   || "Not set";
+  document.getElementById("helperPhoneDisplay").textContent = localStorage.getItem("helper_phone") || "Not set";
+}
+
+function editContacts() {
+  const uPhone = prompt("Your phone number:", localStorage.getItem("user_phone") || "");
+  if (uPhone === null) return;
+  const hPhone = prompt("Helper/Guardian phone number:", localStorage.getItem("helper_phone") || "");
+  if (hPhone === null) return;
+  if (uPhone) localStorage.setItem("user_phone",   uPhone);
+  if (hPhone) localStorage.setItem("helper_phone", hPhone);
+  updateContactDisplay();
+  alert("Contacts updated!");
+}
+
+// ── INACTIVITY ────────────────────────────────────────────────────
+const INACTIVITY_LIMIT = 5 * 60 * 1000;
+let idleTimer;
+function resetIdleTimer() {
+  if (!localStorage.getItem("supabase_session")) return;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    alert("You have been logged out due to 5 minutes of inactivity.");
+    logout();
+  }, INACTIVITY_LIMIT);
+}
+window.onload = () => {
+  if (localStorage.getItem("supabase_session")) { showApp(); resetIdleTimer(); }
+};
+window.onmousemove  = resetIdleTimer;
+window.onmousedown  = resetIdleTimer;
+window.ontouchstart = resetIdleTimer;
+window.onclick      = resetIdleTimer;
+window.onkeydown    = resetIdleTimer;
 </script>
-
 </body>
 </html>
-```
