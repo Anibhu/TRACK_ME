@@ -474,6 +474,82 @@ html, body {
 
 <body>
 
+  <div id="nexus-preloader">
+  <div class="pl-grid"></div>
+
+  <svg class="pl-signal" viewBox="0 0 28 28">
+    <circle class="pl-ring1" cx="14" cy="14" r="2"/>
+    <circle class="pl-ring2" cx="14" cy="14" r="2"/>
+    <circle class="pl-ring3" cx="14" cy="14" r="2"/>
+    <circle cx="14" cy="14" r="2.5" fill="#00c878"/>
+  </svg>
+
+  <div class="pl-brand">NexusTracker</div>
+
+  <div class="pl-scene">
+    <div class="pl-rabbit-wrap">
+      <svg class="pl-rabbit" width="80" height="68" viewBox="0 0 80 68" fill="none">
+        <g class="pl-ear-l">
+          <ellipse cx="28" cy="12" rx="5" ry="13" fill="#e8f5f0" stroke="#00c878" stroke-width="1.2"/>
+          <ellipse cx="28" cy="12" rx="2.5" ry="9" fill="#ffb5c8"/>
+        </g>
+        <g class="pl-ear-r">
+          <ellipse cx="44" cy="10" rx="5" ry="13" fill="#e8f5f0" stroke="#00c878" stroke-width="1.2"/>
+          <ellipse cx="44" cy="10" rx="2.5" ry="9" fill="#ffb5c8"/>
+        </g>
+        <ellipse cx="36" cy="30" rx="17" ry="15" fill="#e8f5f0" stroke="#00c878" stroke-width="1.2"/>
+        <ellipse cx="36" cy="42" rx="15" ry="13" fill="#d8f0e8" stroke="#00c878" stroke-width="1.2"/>
+        <circle cx="30" cy="27" r="3" fill="#00c878"/>
+        <circle cx="42" cy="27" r="3" fill="#00c878"/>
+        <circle cx="30" cy="27" r="1.5" fill="#041a0f"/>
+        <circle cx="42" cy="27" r="1.5" fill="#041a0f"/>
+        <circle cx="29" cy="26" r="0.7" fill="white"/>
+        <circle cx="41" cy="26" r="0.7" fill="white"/>
+        <ellipse cx="36" cy="32" rx="3" ry="1.5" fill="#ffb5c8"/>
+        <line x1="36" y1="33.5" x2="30" y2="36" stroke="#ccc" stroke-width="0.8"/>
+        <line x1="36" y1="33.5" x2="42" y2="36" stroke="#ccc" stroke-width="0.8"/>
+        <line x1="36" y1="33.5" x2="28" y2="34" stroke="#ccc" stroke-width="0.8"/>
+        <line x1="36" y1="33.5" x2="44" y2="34" stroke="#ccc" stroke-width="0.8"/>
+        <g class="pl-leg-fl">
+          <rect x="22" y="52" width="8" height="14" rx="4" fill="#e8f5f0" stroke="#00c878" stroke-width="1.2"/>
+          <ellipse cx="26" cy="66" rx="7" ry="3" fill="#d8f0e8" stroke="#00c878" stroke-width="1"/>
+        </g>
+        <g class="pl-leg-fr">
+          <rect x="34" y="52" width="8" height="14" rx="4" fill="#e8f5f0" stroke="#00c878" stroke-width="1.2"/>
+          <ellipse cx="38" cy="66" rx="7" ry="3" fill="#d8f0e8" stroke="#00c878" stroke-width="1"/>
+        </g>
+        <g class="pl-leg-rl">
+          <rect x="14" y="48" width="9" height="16" rx="4" fill="#d8f0e8" stroke="#00c878" stroke-width="1"/>
+          <ellipse cx="18" cy="64" rx="6" ry="2.5" fill="#c5e8da" stroke="#00c878" stroke-width="1"/>
+        </g>
+        <g class="pl-leg-rr">
+          <rect x="42" y="48" width="9" height="16" rx="4" fill="#d8f0e8" stroke="#00c878" stroke-width="1"/>
+          <ellipse cx="46" cy="64" rx="6" ry="2.5" fill="#c5e8da" stroke="#00c878" stroke-width="1"/>
+        </g>
+        <g class="pl-tail">
+          <circle cx="8" cy="40" r="7" fill="#e8f5f0" stroke="#00c878" stroke-width="1"/>
+          <circle cx="8" cy="40" r="4" fill="white"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="pl-dust">
+      <div class="pl-puff"></div>
+      <div class="pl-puff" style="width:5px;height:4px;margin-top:2px;"></div>
+      <div class="pl-puff" style="width:6px;height:3px;"></div>
+    </div>
+
+    <div class="pl-ground"></div>
+    <div class="pl-ground-dots" id="plDots"></div>
+  </div>
+
+  <div class="pl-progress-wrap">
+    <div class="pl-progress-fill" id="plProgress"></div>
+  </div>
+
+  <div class="pl-status" id="plStatus">Authenticating<span class="pl-dots"></span></div>
+</div>
+
 <!-- ── BACKGROUND ────────────────────────────────────────────────── -->
 <div class="bg-scene">
   <div class="bg-grid"></div>
@@ -653,6 +729,41 @@ html, body {
 <script src="js/map.js"></script>
 <script src="js/tracking.js"></script>
 <script>
+  // ── Preloader helpers ──────────────────────────────────────────
+function showPreloader(statusText) {
+  const pl = document.getElementById('nexus-preloader');
+  pl.classList.remove('pl-fade-out');
+  pl.classList.add('active');
+  setPreloaderStatus(statusText || 'Authenticating');
+  setPreloaderProgress(0);
+
+  // Generate ground dots
+  const dotsEl = document.getElementById('plDots');
+  dotsEl.innerHTML = Array(20).fill(0).map(() =>
+    `<div style="width:4px;height:4px;border-radius:50%;background:rgba(0,200,120,0.25);margin:0 14px;flex-shrink:0;"></div>`
+  ).join('');
+}
+
+function hidePreloader() {
+  const pl = document.getElementById('nexus-preloader');
+  setPreloaderProgress(100);
+  setTimeout(() => {
+    pl.classList.add('pl-fade-out');
+    setTimeout(() => pl.classList.remove('active'), 520);
+  }, 400);
+}
+
+function setPreloaderStatus(text) {
+  const el = document.getElementById('plStatus');
+  if (el) el.childNodes[0].nodeValue = text;
+}
+
+function setPreloaderProgress(pct) {
+  const el = document.getElementById('plProgress');
+  if (el) el.style.width = pct + '%';
+}
+// ──────────────────────────────────────────────────────────────
+
 // ── COLLEGE SELECTOR ─────────────────────────────────────────────
 function selectCollege(college) {
   document.getElementById('collegeSelect').value = college;
@@ -688,13 +799,16 @@ async function signup() {
   if (!email || !password) { alert("Please enter email and password"); return; }
   if (!userPhone)           { alert("Please enter your phone number"); return; }
   if (!helperPhone)         { alert("Please enter a guardian/helper phone number"); return; }
-
+  showPreloader('Creating account');
+  setPreloaderProgress(20);
   try {
+    setPreloaderProgress(50);
     const res  = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
+    setPreloaderProgress(80);
     const data = await res.json();
 
     if (data.status === "success") {
@@ -703,12 +817,15 @@ async function signup() {
       localStorage.setItem("user_phone",    userPhone);
       localStorage.setItem("helper_phone",  helperPhone);
       alert("Account created successfully!");
-      showApp();
-      resetIdleTimer();
+      setPreloaderStatus('Almost there');
+      setPreloaderProgress(95);
+      setTimeout(() => { hidePreloader(); showApp(); resetIdleTimer(); }, 600);
     } else {
+      hidePreloader();
       alert("Signup failed: " + (data.detail || "User might already exist"));
     }
   } catch (err) {
+    hidePreloader();
     document.getElementById("authResult").innerText = "Error: " + err.message;
   }
 }
@@ -717,19 +834,27 @@ async function signup() {
 async function login() {
   const email    = document.getElementById("email").value;
   const password = document.getElementById("password").value;
+  showPreloader('Authenticating');
+  setPreloaderProgress(20);
   try {
+    setPreloaderProgress(45);
     const res  = await fetch("https://track-me-backend-rzto.onrender.com/api/v1/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
+    setPreloaderProgress(75);
     const data = await res.json();
     if (data.status === "success") {
       localStorage.setItem("supabase_session", JSON.stringify(data.session));
       localStorage.setItem("user_id", data.user.id);
-      showApp();
-      resetIdleTimer();
+      setPreloaderStatus('Loading map');
+      setPreloaderProgress(90);
+      setTimeout(() => { hidePreloader(); 
+        showApp(); 
+        resetIdleTimer(); }, 600);
     } else {
+      hidePreloader();
       alert("Login failed: " + data.detail);
     }
   } catch (err) {

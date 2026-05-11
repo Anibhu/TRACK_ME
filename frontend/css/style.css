@@ -641,3 +641,177 @@ button:disabled {
   color: rgba(255,255,255,0.18);
   font-family: 'Space Mono', monospace;
 }
+
+/* CSS FOR PRELOADER */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@700&display=swap');
+
+#nexus-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #080d14;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Space Mono', monospace;
+}
+#nexus-preloader.active { display: flex; }
+
+.pl-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,120,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,120,0.05) 1px, transparent 1px);
+  background-size: 36px 36px;
+  pointer-events: none;
+}
+
+.pl-signal {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  width: 32px;
+  height: 32px;
+}
+.pl-signal circle { fill: none; stroke: #00c878; stroke-width: 1.5; transform-origin: 14px 14px; }
+.pl-ring1 { animation: plRing 1.4s ease-out infinite; }
+.pl-ring2 { animation: plRing 1.4s ease-out 0.45s infinite; }
+.pl-ring3 { animation: plRing 1.4s ease-out 0.9s infinite; }
+@keyframes plRing {
+  0%   { r: 2; opacity: 1; }
+  100% { r: 13; opacity: 0; }
+}
+
+.pl-brand {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: rgba(255,255,255,0.12);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pl-scene {
+  position: relative;
+  width: 260px;
+  height: 180px;
+  margin-bottom: 24px;
+}
+
+.pl-rabbit-wrap {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pl-rabbit {
+  animation: plBounce 0.38s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+}
+@keyframes plBounce {
+  from { transform: translateY(0) scaleY(1) scaleX(1); }
+  to   { transform: translateY(-14px) scaleY(1.06) scaleX(0.94); }
+}
+
+.pl-ear-l { animation: plEarL 0.38s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.pl-ear-r { animation: plEarR 0.38s ease-in-out 0.1s infinite alternate-reverse; transform-origin: 50% 100%; }
+@keyframes plEarL { from { transform: rotate(-4deg); } to { transform: rotate(6deg); } }
+@keyframes plEarR { from { transform: rotate(4deg); } to { transform: rotate(-6deg); } }
+
+.pl-leg-fl { animation: plLeg  0.19s linear infinite; transform-origin: 50% 0%; }
+.pl-leg-rl { animation: plLeg  0.19s linear 0.095s infinite; transform-origin: 50% 0%; }
+.pl-leg-fr { animation: plLegR 0.19s linear infinite; transform-origin: 50% 0%; }
+.pl-leg-rr { animation: plLegR 0.19s linear 0.095s infinite; transform-origin: 50% 0%; }
+@keyframes plLeg  { 0% { transform:rotate(-30deg); } 50% { transform:rotate(30deg); } 100% { transform:rotate(-30deg); } }
+@keyframes plLegR { 0% { transform:rotate(30deg);  } 50% { transform:rotate(-30deg);} 100% { transform:rotate(30deg);  } }
+
+.pl-tail { animation: plTail 0.38s ease-in-out infinite alternate; transform-origin: 0% 50%; }
+@keyframes plTail { from { transform: rotate(-10deg); } to { transform: rotate(10deg); } }
+
+.pl-dust {
+  position: absolute;
+  bottom: 28px;
+  left: calc(50% - 60px);
+  display: flex;
+  gap: 4px;
+  animation: plDust 0.38s ease-out infinite;
+}
+@keyframes plDust {
+  0%   { opacity: 0.6; transform: translateX(0) scale(1); }
+  100% { opacity: 0;   transform: translateX(-16px) scale(1.5); }
+}
+.pl-puff {
+  width: 8px; height: 5px;
+  border-radius: 50%;
+  background: rgba(0,200,120,0.25);
+}
+
+.pl-ground {
+  position: absolute;
+  bottom: 24px;
+  left: 0; right: 0;
+  height: 2px;
+  background: rgba(0,200,120,0.2);
+}
+
+.pl-ground-dots {
+  position: absolute;
+  bottom: 18px;
+  left: 0; right: 0;
+  display: flex;
+  gap: 0;
+  animation: plScroll 0.6s linear infinite;
+  overflow: hidden;
+}
+@keyframes plScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-36px); }
+}
+
+.pl-progress-wrap {
+  width: min(320px, 70vw);
+  height: 2px;
+  background: rgba(0,200,120,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.pl-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #00c878;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.pl-status {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: rgba(0,200,120,0.65);
+  text-transform: uppercase;
+}
+.pl-dots::after {
+  content: '';
+  animation: plDotCycle 1.2s steps(4, end) infinite;
+}
+@keyframes plDotCycle {
+  0%   { content: '';    }
+  25%  { content: '.';   }
+  50%  { content: '..';  }
+  75%  { content: '...'; }
+  100% { content: '';    }
+}
+
+#nexus-preloader.pl-fade-out {
+  animation: plFadeOut 0.5s ease forwards;
+}
+@keyframes plFadeOut {
+  to { opacity: 0; pointer-events: none; }
+}
