@@ -5,67 +5,75 @@ const BACKEND_URL = 'https://track-me-backend-rzto.onrender.com/api/v1';
 // EMERGENCY LOCATIONS (MANUAL)
 // ===============================
 const EMERGENCY_HOSPITALS = [
-    { name: "Jalpaiguri District Hospital",           lat: 26.5244, lon: 88.7197, ph: "+917478205691"},
-    { name: "North Bengal Medical College",            lat: 26.6873, lon: 88.3945, ph: "9474122840" },
-    { name: "Maynaguri Rural Hospital",                lat: 26.5652, lon: 88.8196, ph: "9474122840" },
-    { name: "Arogya Nursing Home",                     lat: 26.5258, lon: 88.7229, ph: "9474122840" },
-    { name: "Jalpaiguri Superspeciality Hospital",     lat: 26.5167, lon: 88.7075, ph: "3561232002" },
+    { name: "Jalpaiguri District Hospital",          lat: 26.5244, lon: 88.7197, ph: 917478205691},
+    { name: "North Bengal Medical College and Hospital", lat: 26.6873, lon: 88.3945, ph: 9474122840 },
+    { name: "Maynaguri Rural Hospital",              lat: 26.5652, lon: 88.8196, ph: 9474122840 },
+    { name: "Arogya Nursing Home (Jalpaiguri)",      lat: 26.5258, lon: 88.7229, ph: 9474122840 },
+    { name: "Jalpaiguri Superspeciality Hospital",  lat: 26.5167, lon: 88.7075, ph: 3561232002 },
 ];
 
 const EMERGENCY_POLICE_STATIONS = [
-    { name: "Kotwali Police Station",                lat: 26.5246, lon: 88.7266, ph: "9474122840" },
-    { name: "Jalpaiguri Cyber Crime Station",        lat: 26.5404, lon: 88.7193, ph: "9474122840" },
-    { name: "Maynaguri Police Station",              lat: 26.5625, lon: 88.8210, ph: "9474122840" }
+    { name: "Kotwali Police Station (Jalpaiguri)",   lat: 26.5246, lon: 88.7266, ph: 9474122840 },
+    { name: "Jalpaiguri cyber crime police station",   lat: 26.5404, lon: 88.7193, ph: 9474122840 },
+    { name: "Maynaguri Police Station",              lat: 26.5625, lon: 88.8210, ph: 9474122840 }
 ];
 
+// Emergency markers stored separately so clearMarkers() never removes them.
 let emergencyMarkers = [];
+
 let trackingInterval = null;
 let currentUser = localStorage.getItem("user_id") || 'guest';
 let isTracking = false;
 let wasOutside = false;
 let isEmergencyActive = false;
 
-// Last known user position
+// Last known user position (set on each GPS tick)
 let lastUserLat = null;
 let lastUserLon = null;
 
+
 // ===============================
-// UI HELPERS (Synced with Premium CSS)
+// UI HELPERS
 // ===============================
 function updateUserId() {
     const newUserId = document.getElementById('userId').value.trim();
     if (newUserId) {
         currentUser = newUserId;
-        localStorage.setItem("user_id", newUserId);
-        updateStatus(`User ID updated: ${currentUser}`);
+        updateStatus(`User ID updated to: ${currentUser}`);
     } else {
         alert('Please enter a valid User ID');
     }
 }
 
 function updateStatus(message) {
-    const statusEl = document.getElementById('status');
-    statusEl.innerHTML = `<i class="fa fa-circle-notch fa-spin"></i> ${message}`;
+    document.getElementById('status').textContent = message;
     console.log(message);
 }
 
 function updateCurrentLocation(lat, lng) {
-    document.getElementById('currentLocation').innerHTML =
-        `<i class="fa fa-crosshairs"></i> Lat ${lat.toFixed(6)}, Lng ${lng.toFixed(6)}`;
+    document.getElementById('currentLocation').textContent =
+        `Current: Lat ${lat.toFixed(6)}, Lng ${lng.toFixed(6)}`;
 }
 
+
 // ===============================
-// BACKEND SYNC
+// SEND LOCATION TO BACKEND
+// Accepts an optional isEmergency flag (default false).
+// When true, is_emergency: true is included in the payload so the
+// backend (and view_path.html) can mark the point on the path.
 // ===============================
 async function sendLocationToServer(latitude, longitude, isEmergency = false) {
+    if (isEmergency) alert("🚨 Emergency flag is TRUE"); // ← ADD THIS
+    
     const sessionData = JSON.parse(localStorage.getItem("supabase_session"));
     const token = sessionData?.access_token;
-    const savedUserId = localStorage.getItem("user_id") || currentUser;
-
-    if (!savedUserId) return;
-
+    const savedUserId = localStorage.getItem("user_id") || document.getElementById("userId")?.value;
+    if (!savedUserId) {
+        console.error("No User ID found. Cannot track location.");
+        return;
+    }
     try {
-        await fetch(`${BACKEND_URL}/locations/save`, {
+        const response = await fetch(`${BACKEND_URL}/locations/save`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -76,16 +84,21 @@ async function sendLocationToServer(latitude, longitude, isEmergency = false) {
                 latitude,
                 longitude,
                 timestamp: Math.floor(Date.now()),
-                is_emergency: isEmergency
+                is_emergency: isEmergency   // ← flagged true only on emergency press
             })
         });
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Server rejected data:", errorData);
+        }
     } catch (error) {
-        console.error("Sync Error:", error);
+        console.error("Network error:", error);
     }
 }
 
+
 // ===============================
-// MATH & SEARCH
+// DISTANCE CALCULATION (Haversine) — returns km
 // ===============================
 function getDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
@@ -98,9 +111,16 @@ function getDistance(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+
+// ===============================
+// GET NEAREST ENTRY from a list
+// Returns the single closest item to (userLat, userLon)
+// with an extra `.distKm` field attached.
+// ===============================
 function getNearestEntry(userLat, userLon, list) {
     let nearest = null;
     let minDist = Infinity;
+
     list.forEach(entry => {
         const d = getDistance(userLat, userLon, entry.lat, entry.lon);
         if (d < minDist) {
@@ -108,11 +128,14 @@ function getNearestEntry(userLat, userLon, list) {
             nearest = { ...entry, distKm: d };
         }
     });
+
     return nearest;
 }
 
+
 // ===============================
-// PREMIUM MAP OVERLAYS
+// BUILD POPUP HTML
+// Shows name, distance, coordinates, and a tap-to-call button.
 // ===============================
 function buildPopupHTML(entry, emoji, nameColor) {
     const distText = entry.distKm < 1
@@ -120,169 +143,371 @@ function buildPopupHTML(entry, emoji, nameColor) {
         : `${entry.distKm.toFixed(2)} km away`;
 
     return `
-        <div style="font-family:'Raleway',sans-serif; min-width:200px;">
-            <div style="font-size:14px; font-weight:700; color:${nameColor}; margin-bottom:5px;">
+        <div style="font-family:sans-serif;min-width:180px;max-width:220px;">
+            <div style="font-size:15px;font-weight:bold;color:${nameColor};margin-bottom:4px;">
                 ${emoji} ${entry.name}
             </div>
-            <div style="font-size:12px; color:#94a3b8; margin-bottom:10px;">
-                <i class="fas fa-route"></i> Distance: ${distText}
+            <div style="font-size:11px;color:#555;margin-bottom:2px;">
+                📍 ${entry.lat.toFixed(4)}° N, ${entry.lon.toFixed(4)}° E
+            </div>
+            <div style="font-size:12px;color:#374151;font-weight:600;margin-bottom:8px;">
+                🗺️ ${distText}
             </div>
             <a href="tel:${entry.ph}"
-               style="display:block; text-align:center; background:${nameColor}; color:#fff; 
-                      font-size:12px; font-weight:700; padding:8px; border-radius:6px; 
-                      text-decoration:none; text-transform:uppercase;">
-                <i class="fas fa-phone-alt"></i> Call Now
+               style="
+                display:block;
+                text-align:center;
+                background:#16a34a;
+                color:#fff;
+                font-size:13px;
+                font-weight:bold;
+                padding:6px 10px;
+                border-radius:8px;
+                text-decoration:none;
+                letter-spacing:0.02em;
+               ">
+               📞 Call ${entry.ph}
             </a>
         </div>
     `;
 }
 
+
+// ===============================
+// SHOW EMERGENCY MARKERS
+// Only the NEAREST hospital and NEAREST police station are shown.
+// ===============================
 function showEmergencyMarkers() {
-    if (!window.trackingMap || !lastUserLat) return;
+    if (!window.trackingMap) return;
+
     clearEmergencyMarkers();
 
-    const targets = [
-        { list: EMERGENCY_HOSPITALS, icon: '🏥', color: '#e05252' },
-        { list: EMERGENCY_POLICE_STATIONS, icon: '🚓', color: '#4f8ef7' }
-    ];
+    const userLat = lastUserLat;
+    const userLon = lastUserLon;
 
-    targets.forEach(t => {
-        const nearest = getNearestEntry(lastUserLat, lastUserLon, t.list);
-        if (nearest) {
-            const icon = L.divIcon({
-                html: `<div style="font-size:32px; filter:drop-shadow(0 0 10px ${t.color});">${t.icon}</div>`,
-                className: '',
-                iconAnchor: [16, 16]
-            });
-            const marker = L.marker([nearest.lat, nearest.lon], { icon })
-                .addTo(window.trackingMap.map)
-                .bindPopup(buildPopupHTML(nearest, t.icon, t.color));
-            marker.openPopup();
-            emergencyMarkers.push(marker);
+    if (userLat === null || userLon === null) {
+        console.warn("User position not yet known — cannot rank emergency locations.");
+        return;
+    }
+
+    // --- Nearest hospital only ---
+    const nearestHospital = getNearestEntry(userLat, userLon, EMERGENCY_HOSPITALS);
+    if (nearestHospital) {
+        const icon = L.divIcon({
+            html: `<div style="font-size:32px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));">🏥</div>`,
+            className: '',
+            iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([nearestHospital.lat, nearestHospital.lon], { icon })
+            .addTo(window.trackingMap.map)
+            .bindPopup(
+                buildPopupHTML(nearestHospital, '🏥', '#dc2626'),
+                { autoClose: false, closeOnClick: false }
+            );
+
+        marker.openPopup();
+        emergencyMarkers.push(marker);
+    }
+
+    // --- Nearest police station only ---
+    const nearestPolice = getNearestEntry(userLat, userLon, EMERGENCY_POLICE_STATIONS);
+    if (nearestPolice) {
+        const icon = L.divIcon({
+            html: `<div style="font-size:32px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));">🚓</div>`,
+            className: '',
+            iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([nearestPolice.lat, nearestPolice.lon], { icon })
+            .addTo(window.trackingMap.map)
+            .bindPopup(
+                buildPopupHTML(nearestPolice, '🚓', '#1d4ed8'),
+                { autoClose: false, closeOnClick: false }
+            );
+
+        marker.openPopup();
+        emergencyMarkers.push(marker);
+    }
+
+    // Fit map to show user + both emergency markers together
+    if (emergencyMarkers.length > 0) {
+        const allMarkers = [...emergencyMarkers];
+        if (window.trackingMap.markers.length > 0) {
+            allMarkers.push(...window.trackingMap.markers);
         }
-    });
+        const group = L.featureGroup(allMarkers);
+        window.trackingMap.map.fitBounds(group.getBounds().pad(0.25));
+    }
 
-    const group = L.featureGroup([...emergencyMarkers, ...window.trackingMap.markers]);
-    window.trackingMap.map.fitBounds(group.getBounds().pad(0.3));
+    console.log(`Nearest hospital: ${nearestHospital?.name} (${nearestHospital?.distKm?.toFixed(2)} km)`);
+    console.log(`Nearest police:   ${nearestPolice?.name} (${nearestPolice?.distKm?.toFixed(2)} km)`);
 }
 
+
+// ===============================
+// CLEAR EMERGENCY MARKERS
+// ===============================
 function clearEmergencyMarkers() {
     if (!window.trackingMap) return;
     emergencyMarkers.forEach(m => window.trackingMap.map.removeLayer(m));
     emergencyMarkers = [];
 }
 
+
 // ===============================
-// TRACKING CORE
+// GEOFENCE CHECK
+// ===============================
+function checkGeofence(lat, lng) {
+    if (typeof turf === "undefined") {
+        console.error("Turf not loaded");
+        return;
+    }
+
+    if (!window.trackingMap || !window.trackingMap.geofence) return;
+
+    const geofenceLatLng = window.trackingMap.geofence.getLatLngs()[0];
+    const geofenceLngLat = geofenceLatLng.map(p => [p.lng, p.lat]);
+    geofenceLngLat.push(geofenceLngLat[0]);
+
+    const point = turf.point([lng, lat]);
+    const polygon = turf.polygon([geofenceLngLat]);
+    const isInside = turf.booleanPointInPolygon(point, polygon);
+
+    if (isInside) {
+        updateStatus("🟢 Inside Geofence");
+        wasOutside = false;
+    } else {
+        updateStatus("🔴 Outside Geofence");
+        if (!wasOutside) {
+            alert("🚨 Boundary crossed!");
+            wasOutside = true;
+        }
+    }
+}
+
+
+// ===============================
+// START TRACKING
 // ===============================
 function startTracking() {
-    if (!navigator.geolocation) return alert("Geolocation not supported");
+    if (!navigator.geolocation) {
+        alert("Geolocation not supported");
+        return;
+    }
 
     const selectedCollege = document.getElementById('collegeSelect')?.value || 'JGEC';
-    if (window.trackingMap) window.trackingMap.setGeofence(selectedCollege);
+    if (window.trackingMap) {
+        window.trackingMap.setGeofence(selectedCollege);
+    }
 
-    // Update UI State
+    const collegeSelect = document.getElementById('collegeSelect');
+    if (collegeSelect) collegeSelect.disabled = true;
+
+    updateStatus("Starting tracking...");
     isTracking = true;
     document.getElementById('startBtn').disabled = true;
     document.getElementById('stopBtn').disabled = false;
-    document.querySelectorAll('.college-btn').forEach(btn => btn.style.opacity = '0.5');
 
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        lastUserLat = lat; lastUserLon = lng;
-        
-        updateCurrentLocation(lat, lng);
-        await sendLocationToServer(lat, lng);
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
 
-        if (window.trackingMap) {
-            window.trackingMap.setView(lat, lng, 16);
-            window.trackingMap.clearMarkers();
-            window.trackingMap.addMarker(lat, lng, "📍 My Live Position");
-        }
-        startContinuousTracking();
-    }, (err) => console.error(err), { enableHighAccuracy: true });
-}
-
-function startContinuousTracking() {
-    if (trackingInterval) clearInterval(trackingInterval);
-    trackingInterval = setInterval(() => {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-            const { latitude: lat, longitude: lng } = pos.coords;
-            lastUserLat = lat; lastUserLon = lng;
+            lastUserLat = lat;
+            lastUserLon = lng;
 
             updateCurrentLocation(lat, lng);
-            
-            // Check Geofence
-            if (window.trackingMap && window.trackingMap.geofence) {
-                const point = turf.point([lng, lat]);
-                const poly = turf.polygon([window.trackingMap.geofence.getLatLngs()[0].map(p => [p.lng, p.lat]).concat([[window.trackingMap.geofence.getLatLngs()[0][0].lng, window.trackingMap.geofence.getLatLngs()[0][0].lat]])]);
-                const isInside = turf.booleanPointInPolygon(point, poly);
-                
-                if (!isInside && !wasOutside) {
-                    alert("🚨 BOUNDARY ALERT: You have left the safe zone!");
-                    wasOutside = true;
-                } else if (isInside) {
-                    wasOutside = false;
-                }
+            await sendLocationToServer(lat, lng); // normal point, no emergency flag
+
+            if (window.trackingMap) {
+                window.trackingMap.setView(lat, lng, 16);
+                window.trackingMap.clearMarkers();
+                window.trackingMap.addMarker(lat, lng, "📍 You are here");
             }
 
-            await sendLocationToServer(lat, lng);
-            if (window.trackingMap && !isEmergencyActive) {
-                window.trackingMap.clearMarkers();
-                window.trackingMap.addMarker(lat, lng, "📍 Live Position");
-            }
-        }, null, { enableHighAccuracy: true });
-    }, 5000);
-    updateStatus("System Live: Tracking Active");
+            startContinuousTracking();
+        },
+        handleGeolocationError,
+        { enableHighAccuracy: true }
+    );
 }
 
+
+// ===============================
+// CONTINUOUS TRACKING
+// ===============================
+function startContinuousTracking() {
+    if (trackingInterval) clearInterval(trackingInterval);
+
+    trackingInterval = setInterval(() => {
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                lastUserLat = lat;
+                lastUserLon = lng;
+
+                updateCurrentLocation(lat, lng);
+                checkGeofence(lat, lng);
+                await sendLocationToServer(lat, lng); // normal point, no emergency flag
+
+                if (window.trackingMap) {
+                    window.trackingMap.clearMarkers();
+                    window.trackingMap.addMarker(lat, lng, "📍 You are here");
+
+                    if (isEmergencyActive) {
+                        // No auto-zoom — let user see hospital & police markers freely
+                        updateStatus("🚨 Emergency Mode Active — Help locations shown on map");
+                    } else {
+                        window.trackingMap.setView(lat, lng, 16);
+                    }
+                }
+            },
+            (error) => console.error(error),
+            { enableHighAccuracy: true }
+        );
+
+    }, 5000);
+
+    updateStatus("Tracking every 5 seconds...");
+}
+
+
+// ===============================
+// STOP TRACKING
+// ===============================
 function stopTracking() {
     isTracking = false;
     isEmergencyActive = false;
-    clearInterval(trackingInterval);
-    clearEmergencyMarkers();
-    
+
     document.getElementById('startBtn').disabled = false;
     document.getElementById('stopBtn').disabled = true;
     document.getElementById('stopEmergencyBtn').disabled = true;
-    document.querySelectorAll('.college-btn').forEach(btn => btn.style.opacity = '1');
-    
-    updateStatus("System Standby");
+
+    const collegeSelect = document.getElementById('collegeSelect');
+    if (collegeSelect) collegeSelect.disabled = false;
+
+    if (trackingInterval) clearInterval(trackingInterval);
+
+    clearEmergencyMarkers();
+    updateStatus("Tracking stopped");
 }
 
+
 // ===============================
-// EMERGENCY (SOS)
+// 🚨 EMERGENCY — trigger
+// Sends current location with is_emergency: true so view_path.html
+// can display a 🚨 marker at the exact point the button was pressed.
+// ===============================
+// ===============================
+// 🚨 EMERGENCY — trigger
+// Sends current location with is_emergency: true AND
+// opens SMS app pre-filled with Google Maps link
+// for both the user and their helper/guardian.
 // ===============================
 async function triggerEmergency() {
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        lastUserLat = lat; lastUserLon = lng;
+    navigator.geolocation.getCurrentPosition(async (position) => {
 
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        lastUserLat = lat;
+        lastUserLon = lng;
+
+        // Save emergency point to backend
         await sendLocationToServer(lat, lng, true);
+
         isEmergencyActive = true;
         document.getElementById('stopEmergencyBtn').disabled = false;
-        document.getElementById('stopEmergencyBtn').style.backgroundColor = "#dc2626";
 
+        // Show nearest hospital + police on map
         showEmergencyMarkers();
+        updateStatus("🚨 Emergency Mode Active — Nearest help shown on map");
+
+        // ── SOS SMS ───────────────────────────────────────────────────────
         sendSOSSms(lat, lng);
-        
-        updateStatus("🚨 EMERGENCY MODE ACTIVE");
-        alert("🚨 SOS TRIGGERED\nEmergency services and guardians notified.");
-    }, null, { enableHighAccuracy: true });
+        // ─────────────────────────────────────────────────────────────────
+
+        alert("🚨 Emergency activated!\nNearest hospital and police station are now marked on the map.\nSOS SMS is being sent to your contacts.");
+
+    }, handleGeolocationError, { enableHighAccuracy: true });
 }
 
+
+// ===============================
+// 📱 SEND SOS SMS
+// Opens the phone's default SMS app pre-filled with
+// an emergency message containing a Google Maps link.
+// Sends to both user's own number and helper number.
+// ===============================
 function sendSOSSms(lat, lng) {
-    const helperPhone = localStorage.getItem("helper_phone");
-    if (!helperPhone) return;
+    const userPhone   = localStorage.getItem("user_phone")   || "";
+    const helperPhone = localStorage.getItem("helper_phone") || "";
 
-    const msg = encodeURIComponent(`🚨 SOS! I need help. My location: https://maps.google.com/?q=${lat},${lng}`);
-    window.open(`sms:${helperPhone}?body=${msg}`, '_blank');
+    if (!userPhone && !helperPhone) {
+        alert("⚠️ No emergency contacts saved!\nPlease edit your contacts in the app.");
+        return;
+    }
+
+    const mapsLink = `https://maps.google.com/?q=${lat},${lng}`;
+    const message  = encodeURIComponent(
+        `🚨 EMERGENCY ALERT!\n` +
+        `I need help. My current location:\n` +
+        `${mapsLink}\n` +
+        `Please contact me immediately!`
+    );
+
+    // Send to helper first (most important)
+    if (helperPhone) {
+        const helperSmsLink = `sms:${helperPhone}?body=${message}`;
+        window.open(helperSmsLink, '_blank');
+    }
+
+    // Small delay then send to user's own number
+    if (userPhone) {
+        setTimeout(() => {
+            const userSmsLink = `sms:${userPhone}?body=${message}`;
+            window.open(userSmsLink, '_blank');
+        }, 1500);
+    }
 }
 
+// ===============================
+// ⛔ STOP EMERGENCY
+// ===============================
 function stopEmergency() {
+    if (!isEmergencyActive) {
+        alert("No active emergency!");
+        return;
+    }
+
     isEmergencyActive = false;
     clearEmergencyMarkers();
+
+    updateStatus("🟢 Emergency stopped.");
+    alert("Emergency mode deactivated!");
+
     document.getElementById('stopEmergencyBtn').disabled = true;
-    document.getElementById('stopEmergencyBtn').style.backgroundColor = "#6b7280";
-    updateStatus("System Live: Tracking Active");
 }
+
+
+// ===============================
+// GEO ERROR
+// ===============================
+function handleGeolocationError(error) {
+    console.error(error);
+    alert("Location error");
+}
+
+
+// ===============================
+// INIT
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("userId").value = currentUser;
+    document.getElementById("stopEmergencyBtn").disabled = true;
+    updateStatus("Ready to track location");
+});
