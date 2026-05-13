@@ -9,7 +9,7 @@ const EMERGENCY_HOSPITALS = [
     { name: "North Bengal Medical College and Hospital", lat: 26.6873, lon: 88.3945, ph: 9474122840 },
     { name: "Maynaguri Rural Hospital",              lat: 26.5652, lon: 88.8196, ph: 9474122840 },
     { name: "Arogya Nursing Home (Jalpaiguri)",      lat: 26.5258, lon: 88.7229, ph: 9474122840 },
-    { name: "Jalpaiguri Superspeciality Hospital",  lat: 26.5167, lon: 88.7075, ph: 3561232002 },
+    { name: "Jalpaiguri Superspeciality Hospital",  lat: 26.5431, lon: 88.7060, ph: 3561232002 }
 ];
 
 const EMERGENCY_POLICE_STATIONS = [
